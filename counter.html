@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Counter</title>
+</head>
+<body>
+    <h1>Counter: <span id="count">0</span></h1>
+    <button id="increaseButton">Increase Count</button>
+
+    <script>
+        let count = 0;
+        const countSpan = document.getElementById('count');
+        const increaseButton = document.getElementById('increaseButton');
+
+        increaseButton.addEventListener('click', () => {
+            count++;
+            countSpan.textContent = count;
+        });
+    </script>
+</body>
+</html>
