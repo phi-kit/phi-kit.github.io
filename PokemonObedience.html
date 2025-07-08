@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Report: The Evolution of Pokémon Obedience</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals with Subtle Accents -->
+    <!-- Application Structure Plan: A single-page, vertically scrolling application divided into clear thematic sections: 1. Introduction, 2. Core Mechanics, 3. Generational Comparison (Interactive Chart), 4. Modern Mechanics, 5. Consequences of Disobedience, and 6. Conclusion/Tips. This structure guides the user from general concepts to specific, interactive data, and finally to practical takeaways. It's more logical for learning than a direct report-to-page conversion, facilitating exploration and understanding of the evolution of the game mechanic. The interactive chart is the centerpiece, allowing direct engagement with the core data. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Obedience level caps per badge across game generations. -> Goal: Compare change over time. -> Viz: Interactive Bar Chart (Chart.js). -> Interaction: Dropdown to select game/generation, which dynamically updates the chart data. -> Justification: A bar chart is excellent for comparing discrete values (level caps) across categories (badges). The interactivity makes a large dataset digestible and empowers the user to explore the specific data they're interested in, revealing how design philosophy changed over time.
+        - Report Info: Consequences of disobedience. -> Goal: Inform. -> Viz: Styled HTML Table. -> Interaction: None. -> Justification: A simple table is the clearest way to present a list of discrete actions and their descriptions.
+        - Report Info: OT vs. "Level when obtained" concepts. -> Goal: Explain a paradigm shift. -> Viz: Side-by-side text blocks with clear headings and icons (Unicode). -> Interaction: None needed, direct comparison is key. -> Justification: This visual separation makes the contrast between the old and new systems immediately apparent.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+        .content-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: all 0.3s ease-in-out;
+        }
+        .nav-button {
+            transition: all 0.2s ease-in-out;
+        }
+        .nav-button.active {
+            color: #4f46e5;
+            border-bottom-color: #4f46e5;
+        }
+        .nav-button:not(.active) {
+            border-bottom-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-indigo-700 mb-2">The Evolution of Pokémon Obedience</h1>
+            <p class="text-lg text-gray-600">An interactive guide to mastering your team's loyalty.</p>
+        </header>
+
+        <nav class="sticky top-0 bg-gray-50/80 backdrop-blur-sm z-10 mb-12 py-2 border-b border-gray-200">
+            <div class="flex justify-center items-center space-x-4 md:space-x-8">
+                <button onclick="scrollToSection('section-intro')" class="nav-button active text-sm md:text-base font-medium text-gray-500 hover:text-indigo-600 border-b-2 pb-1">Introduction</button>
+                <button onclick="scrollToSection('section-compare')" class="nav-button text-sm md:text-base font-medium text-gray-500 hover:text-indigo-600 border-b-2 pb-1">Compare Eras</button>
+                <button onclick="scrollToSection('section-modern')" class="nav-button text-sm md:text-base font-medium text-gray-500 hover:text-indigo-600 border-b-2 pb-1">Modern Rules</button>
+                <button onclick="scrollToSection('section-consequences')" class="nav-button text-sm md:text-base font-medium text-gray-500 hover:text-indigo-600 border-b-2 pb-1">Disobedience</button>
+            </div>
+        </nav>
+
+        <main class="space-y-16">
+
+            <section id="section-intro" class="scroll-mt-24">
+                <div class="content-card">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Why Do Pokémon Sometimes Disobey?</h2>
+                    <div class="space-y-4 text-gray-700">
+                        <p>The notion that Pokémon obedience only applies to traded Pokémon is a common, yet incomplete, understanding. This mechanic is a fundamental design element in Pokémon games, acting as a gatekeeper for player progression and a tool for balancing gameplay. It ensures trainers demonstrate skill and earn authority before commanding the most powerful creatures.</p>
+                        <p>At its core, the system is tied to **Gym Badges**. As you prove your skill by defeating Gym Leaders, you earn the respect of higher-level Pokémon. This application explores how this core concept has remained consistent while the specific rules have evolved significantly over time.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="section-compare" class="scroll-mt-24">
+                <div class="content-card">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Generational Divide: Obedience Caps Over Time</h2>
+                    <p class="text-gray-600 mb-6 text-center">Select a game series from the dropdown to see how many badges were needed to control Pokémon at different levels. This chart visualizes the obedience rules for Pokémon that were **traded** to you or, in modern games, **caught at a level above your current limit**.</p>
+                    <div class="mb-6 flex justify-center">
+                        <select id="generation-selector" class="block w-full max-w-xs p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="LGPE" selected>Let's Go, Pikachu & Eevee / Unova</option>
+                            <option value="Galar">Sword & Shield / Kalos</option>
+                            <option value="Sinnoh">Diamond, Pearl & Platinum</option>
+                            <option value="RBY">Red, Blue & Yellow / FireRed & LeafGreen</option>
+                            <option value="Johto">Gold, Silver & Crystal / HeartGold & SoulSilver</option>
+                        </select>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="obedienceChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="section-modern" class="scroll-mt-24">
+                 <div class="content-card">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">The New Rule: It's Not Just About Trades Anymore</h2>
+                     <p class="text-gray-600 mb-6">In modern games like *Pokémon Legends: Arceus* and *Scarlet & Violet*, the rules changed. The focus shifted from whether a Pokémon was traded to the **level it was when you obtained it**. This was a necessary change for open-world games where you can encounter very strong Pokémon early.</p>
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="border border-gray-200 p-4 rounded-lg">
+                            <h3 class="text-lg font-semibold text-red-600 mb-2 flex items-center"><span class="text-2xl mr-2">⏳</span> Old School Rule</h3>
+                            <p class="text-gray-700">Only Pokémon with a different **Original Trainer (OT)** would disobey. If you caught it yourself, it was loyal forever, no matter its level.</p>
+                        </div>
+                        <div class="border border-indigo-300 bg-indigo-50 p-4 rounded-lg">
+                            <h3 class="text-lg font-semibold text-indigo-800 mb-2 flex items-center"><span class="text-2xl mr-2">✨</span> Modern Rule</h3>
+                            <p class="text-gray-700">ANY Pokémon (caught or traded) will disobey if its **level when you first received it** is higher than your badge limit. If you catch it below the limit, it will stay loyal even if you level it up past the cap.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="section-consequences" class="scroll-mt-24">
+                <div class="content-card">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">What Happens When a Pokémon Disobeys?</h2>
+                    <p class="text-gray-600 mb-6">Disobedience isn't just a Pokémon refusing to attack. It can actively sabotage your battle with a range of frustrating actions designed to simulate a lack of respect for an unproven trainer.</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="p-3 font-semibold">Action</th>
+                                    <th class="p-3 font-semibold">Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b">
+                                    <td class="p-3 font-medium">Loafing Around</td>
+                                    <td class="p-3 text-gray-700">The Pokémon ignores the command and wastes a turn.</td>
+                                </tr>
+                                <tr class="border-b">
+                                    <td class="p-3 font-medium">Putting Itself to Sleep</td>
+                                    <td class="p-3 text-gray-700">The Pokémon voluntarily falls asleep, unable to act.</td>
+                                </tr>
+                                 <tr class="border-b">
+                                    <td class="p-3 font-medium">Using a Different Move</td>
+                                    <td class="p-3 text-gray-700">It uses another move from its moveset, often an unhelpful one.</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-medium">Hitting Itself</td>
+                                    <td class="p-3 text-gray-700">The Pokémon becomes confused and may attack itself.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="text-center pt-8 border-t border-gray-200">
+                <p class="text-gray-500">Master your team by proving your skill. Now go earn those badges!</p>
+            </footer>
+
+        </main>
+    </div>
+
+    <script>
+        const chartData = {
+            RBY: {
+                labels: ['No Badge', 'Cascade', 'Thunder', 'Rainbow', 'Soul', 'Marsh', 'Volcano', 'Earth'],
+                data: [10, 30, 30, 50, 50, 70, 70, 100],
+                note: 'Note: RBY caps were less granular.'
+            },
+            Johto: {
+                labels: ['No Badge', 'Zephyr', 'Hive', 'Plain', 'Fog', 'Storm', 'Mineral', 'Glacier', 'Rising'],
+                data: [10, 20, 30, 30, 50, 50, 70, 70, 100],
+                 note: 'Note: Johto caps were less granular.'
+            },
+            Sinnoh: {
+                labels: ['No Badge', '1-2', '3-4', '5-6', '7-8'],
+                data: [10, 30, 50, 70, 100],
+                note: 'Note: Sinnoh grouped badges for obedience checks.'
+            },
+            LGPE: {
+                labels: ['No Badge', '1 Badge', '2 Badges', '3 Badges', '4 Badges', '5 Badges', '6 Badges', '7 Badges', '8 Badges'],
+                data: [10, 20, 30, 40, 50, 60, 70, 80, 100]
+            },
+            Galar: {
+                labels: ['No Badge', '1 Badge', '2 Badges', '3 Badges', '4 Badges', '5 Badges', '6 Badges', '7 Badges', '8 Badges'],
+                data: [20, 30, 40, 50, 60, 70, 80, 90, 100]
+            }
+        };
+
+        let myChart;
+
+        function updateChart(generation) {
+            const data = chartData[generation];
+            if (!data) return;
+
+            const ctx = document.getElementById('obedienceChart').getContext('2d');
+            
+            if (myChart) {
+                myChart.destroy();
+            }
+
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Max Obedience Level',
+                        data: data.data,
+                        backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                        borderColor: 'rgba(79, 70, 229, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Pokémon Level Cap'
+                            }
+                        },
+                        x: {
+                             title: {
+                                display: true,
+                                text: 'Badges Earned'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    return `${context[0].label} Earned`;
+                                },
+                                label: function(context) {
+                                    return `Pokémon up to Lv. ${context.raw} will obey.`;
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: `Obedience Levels in ${generation.replace('RBY', 'Kanto').replace('LGPE', 'Kanto/Unova')}`,
+                            font: {
+                                size: 16
+                            }
+                        },
+                        subtitle: {
+                           display: !!data.note,
+                           text: data.note,
+                           position: 'bottom',
+                           align: 'center',
+                           font: {
+                               size: 12,
+                               style: 'italic'
+                           },
+                           padding: {
+                               top: 10
+                           }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.getElementById('generation-selector').addEventListener('change', function() {
+            updateChart(this.value);
+        });
+
+        function scrollToSection(sectionId) {
+            document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        const navButtons = document.querySelectorAll('.nav-button');
+        const sections = document.querySelectorAll('main section');
+
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.4
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    navButtons.forEach(button => {
+                        button.classList.remove('active');
+                        if (button.getAttribute('onclick') === `scrollToSection('${entry.target.id}')`) {
+                            button.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => {
+            observer.observe(section);
+        });
+
+        // Initial chart load
+        window.addEventListener('load', () => {
+            updateChart('LGPE');
+        });
+    </script>
+</body>
+</html>
