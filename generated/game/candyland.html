@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candyland Adventure</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles to override or enhance Tailwind */
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #game-container {
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            max-width: 1200px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        canvas {
+            background-color: #e0e7ff; /* Light purple-blue for canvas background */
+            border-radius: 15px;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+            max-width: 100%; /* Ensure canvas is responsive */
+            height: auto; /* Maintain aspect ratio */
+            border: 2px solid #a78bfa; /* Purple border */
+        }
+
+        .game-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .game-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            text-align: center;
+        }
+
+        button {
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none; /* Remove default button border */
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #start-game-btn {
+            background: linear-gradient(145deg, #4ade80, #22c55e); /* Green gradient */
+            color: white;
+        }
+
+        #start-game-btn:disabled {
+            background: #a7f3d0;
+            cursor: not-allowed;
+        }
+
+        #draw-card-btn {
+            background: linear-gradient(145deg, #60a5fa, #3b82f6); /* Blue gradient */
+            color: white;
+        }
+
+        #draw-card-btn:disabled {
+            background: #bfdbfe;
+            cursor: not-allowed;
+        }
+
+        #reset-game-btn {
+            background: linear-gradient(145deg, #f87171, #ef4444); /* Red gradient */
+            color: white;
+        }
+
+        #reset-game-btn:disabled {
+            background: #fecaca;
+            cursor: not-allowed;
+        }
+
+        #current-player-display {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #4b5563; /* Gray-700 */
+            background-color: #e2e8f0; /* Light gray background */
+            padding: 10px 20px;
+            border-radius: 10px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        #card-display {
+            min-height: 100px;
+            width: 150px;
+            background-color: #fef08a; /* Yellow-200 */
+            border: 3px dashed #facc15; /* Yellow-400 dashed border */
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #78350f; /* Amber-900 */
+            text-align: center;
+            padding: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        #message-box {
+            background-color: #dbeafe; /* Blue-100 */
+            color: #1e40af; /* Blue-800 */
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            #game-container {
+                padding: 20px;
+            }
+            .game-controls {
+                flex-direction: column;
+            }
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container" class="flex flex-col items-center p-8 bg-white rounded-2xl shadow-lg">
+        <h1 class="text-4xl font-extrabold text-purple-700 mb-6">Candyland Adventure</h1>
+
+        <div class="game-info w-full mb-6">
+            <div id="current-player-display" class="mb-4">Welcome to Candyland!</div>
+            <div id="card-display" class="flex flex-col items-center justify-center">Draw a card!</div>
+        </div>
+
+        <canvas id="gameCanvas" width="800" height="600" class="mb-6"></canvas>
+
+        <div class="game-controls w-full">
+            <button id="start-game-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg">Start Game</button>
+            <button id="draw-card-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg" disabled>Draw Card</button>
+            <button id="reset-game-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg" disabled>Reset Game</button>
+        </div>
+
+        <div id="message-box" class="mt-6 text-blue-800 bg-blue-100 p-4 rounded-lg shadow-md">Click "Start Game" to begin!</div>
+    </div>
+
+    <script>
+        // Get canvas and context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game state variables
+        let board = [];
+        let players = [];
+        let currentPlayerIndex = 0;
+        let deck = [];
+        let gameStarted = false;
+        let gameOver = false;
+        let playerColors = ['#ef4444', '#f97316', '#eab308', '#22c55e']; // Red, Orange, Yellow, Green
+        let squareSize = 40; // Size of each square on the board
+        let pathWidth = 30; // Width of the path connecting squares
+        let boardPadding = 50; // Padding from canvas edges
+
+        // DOM elements
+        const startGameBtn = document.getElementById('start-game-btn');
+        const drawCardBtn = document.getElementById('draw-card-btn');
+        const resetGameBtn = document.getElementById('reset-game-btn');
+        const currentPlayerDisplay = document.getElementById('current-player-display');
+        const cardDisplay = document.getElementById('card-display');
+        const messageBox = document.getElementById('message-box');
+
+        // Board path definition (simplified Candyland path)
+        // R: Red, Y: Yellow, B: Blue, G: Green, O: Orange, P: Purple
+        // L: Licorice, C: Candy Castle (End)
+        const boardPathColors = [
+            'R', 'Y', 'B', 'G', 'O', 'P',
+            'R', 'Y', 'B', 'G', 'O', 'P',
+            'R', 'Y', 'B', 'G', 'O', 'P',
+            'R', 'Y', 'B', 'G', 'O', 'P',
+            'R', 'Y', 'B', 'G', 'O', 'P',
+            'L', // Licorice square
+            'R', 'Y', 'B', 'G', 'O', 'P',
+            'R', 'Y', 'B', 'G', 'O', 'P',
+            'R', 'Y', 'B', 'G', 'O', 'P',
+            'R', 'Y', 'B', 'G', 'O', 'P',
+            'R', 'Y', 'B', 'G', 'O', 'P',
+            'C'  // Candy Castle (Win square)
+        ];
+
+        // Map color codes to actual colors for drawing
+        const colorMap = {
+            'R': '#ef4444', // Red
+            'Y': '#facc15', // Yellow
+            'B': '#3b82f6', // Blue
+            'G': '#22c55e', // Green
+            'O': '#f97316', // Orange
+            'P': '#a855f7', // Purple
+            'L': '#1f2937', // Dark Gray for Licorice
+            'C': '#f472b6'  // Pink for Candy Castle
+        };
+
+        // Initialize the board with positions
+        function initializeBoard() {
+            board = [];
+            let x = boardPadding;
+            let y = canvas.height - boardPadding;
+            let direction = 1; // 1 for right, -1 for left, 0 for up
+
+            for (let i = 0; i < boardPathColors.length; i++) {
+                const colorCode = boardPathColors[i];
+                const color = colorMap[colorCode];
+
+                board.push({
+                    id: i,
+                    colorCode: colorCode,
+                    color: color,
+                    x: x,
+                    y: y
+                });
+
+                // Simple path generation: zig-zag
+                if (direction === 1) { // Moving right
+                    x += squareSize + pathWidth;
+                    if (x + squareSize + boardPadding > canvas.width) {
+                        x = canvas.width - boardPadding - squareSize;
+                        y -= squareSize + pathWidth;
+                        direction = -1; // Change direction to left
+                    }
+                } else if (direction === -1) { // Moving left
+                    x -= squareSize + pathWidth;
+                    if (x < boardPadding) {
+                        x = boardPadding;
+                        y -= squareSize + pathWidth;
+                        direction = 1; // Change direction to right
+                    }
+                }
+            }
+        }
+
+        // Initialize players
+        function initializePlayers(numPlayers = 2) {
+            players = [];
+            for (let i = 0; i < numPlayers; i++) {
+                players.push({
+                    name: `Player ${i + 1}`,
+                    position: 0, // Start at the first square
+                    color: playerColors[i % playerColors.length],
+                    skipTurn: false // For licorice
+                });
+            }
+        }
+
+        // Initialize the deck of cards
+        function initializeDeck() {
+            deck = [];
+            const colors = ['R', 'Y', 'B', 'G', 'O', 'P'];
+            // Single color cards (approx 60% of deck)
+            for (let i = 0; i < 12; i++) { // 2 of each color
+                colors.forEach(color => deck.push({ type: 'single', value: color }));
+            }
+            // Double color cards (approx 30% of deck)
+            for (let i = 0; i < 6; i++) { // 1 of each color
+                colors.forEach(color => deck.push({ type: 'double', value: color }));
+            }
+            // Special cards (Licorice, approx 10%)
+            for (let i = 0; i < 3; i++) {
+                deck.push({ type: 'special', value: 'L' }); // Licorice card
+            }
+            shuffleDeck();
+        }
+
+        // Shuffle the deck
+        function shuffleDeck() {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+
+        // Draw a card from the deck
+        function drawCard() {
+            if (deck.length === 0) {
+                initializeDeck(); // Reshuffle if deck is empty
+                showMessage("Deck reshuffled!");
+            }
+            return deck.pop();
+        }
+
+        // Draw the game board
+        function drawBoard() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+
+            // Draw paths between squares
+            ctx.lineWidth = pathWidth;
+            ctx.lineCap = 'round';
+
+            for (let i = 0; i < board.length - 1; i++) {
+                const currentSquare = board[i];
+                const nextSquare = board[i + 1];
+
+                ctx.beginPath();
+                ctx.moveTo(currentSquare.x + squareSize / 2, currentSquare.y + squareSize / 2);
+                ctx.lineTo(nextSquare.x + squareSize / 2, nextSquare.y + squareSize / 2);
+                ctx.strokeStyle = '#9ca3af'; // Gray path color
+                ctx.stroke();
+            }
+
+            // Draw squares
+            for (let i = 0; i < board.length; i++) {
+                const square = board[i];
+                ctx.fillStyle = square.color;
+                ctx.fillRect(square.x, square.y, squareSize, squareSize);
+
+                // Draw border for squares
+                ctx.strokeStyle = '#4b5563'; // Darker border
+                ctx.lineWidth = 2;
+                ctx.strokeRect(square.x, square.y, squareSize, squareSize);
+
+                // Add square number (optional, for debugging)
+                // ctx.fillStyle = 'white';
+                // ctx.font = '10px Arial';
+                // ctx.fillText(i, square.x + 5, square.y + 15);
+            }
+        }
+
+        // Draw players on the board
+        function drawPlayers() {
+            players.forEach((player, index) => {
+                const square = board[player.position];
+                if (square) {
+                    const playerRadius = squareSize / 4;
+                    // Offset players slightly so they don't perfectly overlap
+                    const offsetX = (index - (players.length - 1) / 2) * (playerRadius + 2);
+                    const offsetY = (index - (players.length - 1) / 2) * (playerRadius + 2);
+
+                    ctx.beginPath();
+                    ctx.arc(square.x + squareSize / 2 + offsetX, square.y + squareSize / 2 + offsetY, playerRadius, 0, Math.PI * 2);
+                    ctx.fillStyle = player.color;
+                    ctx.fill();
+                    ctx.strokeStyle = '#374151'; // Darker border for player token
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            });
+        }
+
+        // Update game display
+        function updateDisplay() {
+            drawBoard();
+            drawPlayers();
+            if (gameStarted && !gameOver) {
+                currentPlayerDisplay.textContent = `${players[currentPlayerIndex].name}'s Turn`;
+            } else if (gameOver) {
+                currentPlayerDisplay.textContent = `Game Over!`;
+            } else {
+                currentPlayerDisplay.textContent = `Welcome to Candyland!`;
+            }
+        }
+
+        // Show a message in the message box
+        function showMessage(msg) {
+            messageBox.textContent = msg;
+        }
+
+        // Game logic for a player's turn
+        function takeTurn() {
+            if (gameOver) return;
+
+            const currentPlayer = players[currentPlayerIndex];
+
+            // Check if player needs to skip turn
+            if (currentPlayer.skipTurn) {
+                showMessage(`${currentPlayer.name} skips their turn due to Licorice!`);
+                currentPlayer.skipTurn = false; // Reset skip turn
+                nextPlayer();
+                return;
+            }
+
+            const card = drawCard();
+            displayCard(card);
+
+            let targetPosition = -1;
+
+            if (card.type === 'single') {
+                showMessage(`${currentPlayer.name} drew a single ${card.value} card.`);
+                // Find the next square of the specified color
+                for (let i = currentPlayer.position + 1; i < board.length; i++) {
+                    if (board[i].colorCode === card.value) {
+                        targetPosition = i;
+                        break;
+                    }
+                }
+            } else if (card.type === 'double') {
+                showMessage(`${currentPlayer.name} drew a double ${card.value} card.`);
+                // Find the second next square of the specified color
+                let count = 0;
+                for (let i = currentPlayer.position + 1; i < board.length; i++) {
+                    if (board[i].colorCode === card.value) {
+                        count++;
+                        if (count === 2) {
+                            targetPosition = i;
+                            break;
+                        }
+                    }
+                }
+            } else if (card.type === 'special' && card.value === 'L') {
+                showMessage(`${currentPlayer.name} drew a Licorice card! Go to Licorice and skip next turn.`);
+                // Find the Licorice square
+                for (let i = 0; i < board.length; i++) {
+                    if (board[i].colorCode === 'L') {
+                        targetPosition = i;
+                        currentPlayer.skipTurn = true;
+                        break;
+                    }
+                }
+            }
+
+            // If no target square found (e.g., color not ahead), stay put or move to end if it's the last square
+            if (targetPosition === -1) {
+                targetPosition = board.length - 1; // Move to end if color not found (shouldn't happen with full board)
+            }
+
+            // Ensure player doesn't go beyond the end of the board
+            if (targetPosition >= board.length - 1) {
+                currentPlayer.position = board.length - 1;
+                gameOver = true;
+                showMessage(`${currentPlayer.name} reached Candy Castle and wins!`);
+                drawCardBtn.disabled = true;
+                startGameBtn.disabled = true;
+                resetGameBtn.disabled = false;
+            } else {
+                currentPlayer.position = targetPosition;
+                // Check if landed on Licorice directly (not from card)
+                if (board[currentPlayer.position].colorCode === 'L' && !currentPlayer.skipTurn) {
+                    showMessage(`${currentPlayer.name} landed on Licorice and skips next turn!`);
+                    currentPlayer.skipTurn = true;
+                }
+            }
+
+            updateDisplay();
+
+            if (!gameOver) {
+                setTimeout(nextPlayer, 1500); // Wait a bit before next player's turn
+            }
+        }
+
+        // Display the drawn card
+        function displayCard(card) {
+            cardDisplay.innerHTML = ''; // Clear previous content
+            const cardTitle = document.createElement('div');
+            cardTitle.className = 'text-xl font-bold';
+
+            if (card.type === 'single') {
+                cardTitle.textContent = `Single ${card.value}`;
+                cardDisplay.style.backgroundColor = colorMap[card.value];
+                cardDisplay.style.borderColor = colorMap[card.value];
+                cardDisplay.style.color = 'white'; // Text color for card
+            } else if (card.type === 'double') {
+                cardTitle.textContent = `Double ${card.value}`;
+                cardDisplay.style.backgroundColor = colorMap[card.value];
+                cardDisplay.style.borderColor = colorMap[card.value];
+                cardDisplay.style.color = 'white';
+            } else if (card.type === 'special' && card.value === 'L') {
+                cardTitle.textContent = `Licorice!`;
+                cardDisplay.style.backgroundColor = colorMap['L'];
+                cardDisplay.style.borderColor = colorMap['L'];
+                cardDisplay.style.color = 'white';
+            }
+            cardDisplay.appendChild(cardTitle);
+        }
+
+        // Move to the next player
+        function nextPlayer() {
+            if (gameOver) return;
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            updateDisplay();
+            showMessage(`${players[currentPlayerIndex].name}'s turn. Draw a card!`);
+        }
+
+        // Start the game
+        function startGame() {
+            if (gameStarted) return;
+            gameStarted = true;
+            gameOver = false;
+            initializeBoard();
+            initializePlayers(2); // Start with 2 players (you and Levi!)
+            initializeDeck();
+            shuffleDeck();
+            currentPlayerIndex = 0; // Player 1 starts
+            updateDisplay();
+            showMessage(`${players[currentPlayerIndex].name}'s turn. Draw a card!`);
+
+            startGameBtn.disabled = true;
+            drawCardBtn.disabled = false;
+            resetGameBtn.disabled = false;
+        }
+
+        // Reset the game
+        function resetGame() {
+            gameStarted = false;
+            gameOver = false;
+            players = [];
+            deck = [];
+            currentPlayerIndex = 0;
+            cardDisplay.innerHTML = 'Draw a card!';
+            cardDisplay.style.backgroundColor = '#fef08a';
+            cardDisplay.style.borderColor = '#facc15';
+            cardDisplay.style.color = '#78350f';
+            updateDisplay();
+            showMessage("Click \"Start Game\" to begin!");
+
+            startGameBtn.disabled = false;
+            drawCardBtn.disabled = true;
+            resetGameBtn.disabled = true;
+        }
+
+        // Event Listeners
+        startGameBtn.addEventListener('click', startGame);
+        drawCardBtn.addEventListener('click', takeTurn);
+        resetGameBtn.addEventListener('click', resetGame);
+
+        // Initial setup on window load
+        window.onload = function() {
+            initializeBoard(); // Initialize board for initial display
+            updateDisplay();
+            // Adjust canvas size for responsiveness
+            function resizeCanvas() {
+                const containerWidth = document.getElementById('game-container').offsetWidth - 60; // Account for padding
+                canvas.width = Math.min(containerWidth, 800);
+                canvas.height = canvas.width * (3/4); // Maintain aspect ratio
+                squareSize = canvas.width / 20; // Adjust square size based on canvas width
+                pathWidth = squareSize / 2;
+                boardPadding = squareSize * 1.25;
+                initializeBoard(); // Re-initialize board with new sizes
+                updateDisplay();
+            }
+
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas(); // Initial call to set size
+        };
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snakes and Ladders</title>
+    <!-- Tailwind CSS for basic layout and responsiveness -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Prevent body scroll */
+        }
+        .game-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* rounded-3xl */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); /* shadow-xl */
+            padding: 2rem; /* p-8 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem; /* gap-6 */
+            max-width: 90%;
+            width: 800px; /* Max width for the game container */
+            margin: 1rem; /* Add some margin for smaller screens */
+        }
+        canvas {
+            background-color: #d4edda; /* Light green board background */
+            border: 2px solid #28a745; /* Green border */
+            border-radius: 0.75rem; /* rounded-xl */
+            display: block;
+            touch-action: none; /* Disable touch actions like pan/zoom on canvas */
+        }
+        .game-controls {
+            display: flex;
+            flex-wrap: wrap; /* Allow controls to wrap on smaller screens */
+            justify-content: center;
+            gap: 1rem; /* gap-4 */
+            width: 100%;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem; /* py-3 px-6 */
+            border-radius: 0.75rem; /* rounded-xl */
+            font-weight: 600; /* font-semibold */
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-primary {
+            background-image: linear-gradient(to right, #6EE7B7, #34D399); /* from-emerald-400 to-emerald-600 */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-image: linear-gradient(to right, #34D399, #10B981); /* from-emerald-500 to-emerald-700 */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.15), 0 3px 5px -1px rgba(0, 0, 0, 0.08);
+        }
+        .btn-secondary {
+            background-color: #E2E8F0; /* bg-slate-200 */
+            color: #475569; /* text-slate-700 */
+        }
+        .btn-secondary:hover {
+            background-color: #CBD5E1; /* bg-slate-300 */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.15), 0 3px 5px -1px rgba(0, 0, 0, 0.08);
+        }
+        .game-info {
+            text-align: center;
+            font-size: 1.125rem; /* text-lg */
+            color: #334155; /* text-slate-700 */
+            font-weight: 500; /* font-medium */
+            min-height: 3rem; /* Ensure consistent height to prevent CLS */
+        }
+        .player-turn {
+            font-weight: 700; /* font-bold */
+            color: #0F766E; /* text-teal-700 */
+        }
+        .dice-result {
+            font-weight: 700; /* font-bold */
+            color: #DC2626; /* text-red-600 */
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            padding: 2.5rem; /* p-10 */
+            border-radius: 1.5rem; /* rounded-3xl */
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-width: 500px;
+            width: 90%;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease-in-out;
+        }
+        .modal.show .modal-content {
+            transform: translateY(0);
+        }
+        .modal-title {
+            font-size: 2.25rem; /* text-4xl */
+            font-weight: 800; /* font-extrabold */
+            color: #1E293B; /* text-slate-900 */
+            margin-bottom: 1rem; /* mb-4 */
+        }
+        .modal-message {
+            font-size: 1.25rem; /* text-xl */
+            color: #475569; /* text-slate-700 */
+            margin-bottom: 2rem; /* mb-8 */
+        }
+        .modal-btn {
+            background-image: linear-gradient(to right, #F97316, #EA580C); /* from-orange-500 to-orange-700 */
+            color: white;
+            padding: 0.75rem 2rem; /* py-3 px-8 */
+            border-radius: 0.75rem; /* rounded-xl */
+            font-weight: 600; /* font-semibold */
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            cursor: pointer;
+            border: none;
+        }
+        .modal-btn:hover {
+            background-image: linear-gradient(to right, #EA580C, #C2410C); /* from-orange-600 to-orange-800 */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.15), 0 3px 5px -1px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 1.5rem;
+                gap: 1rem;
+            }
+            .game-info {
+                font-size: 1rem;
+            }
+            .btn {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.9rem;
+            }
+            .modal-title {
+                font-size: 1.75rem;
+            }
+            .modal-message {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="text-4xl font-extrabold text-slate-900 mb-4">Snakes and Ladders</h1>
+        <canvas id="gameBoard"></canvas>
+        <div class="game-info" id="gameInfo"></div>
+        <div class="game-controls">
+            <button id="rollDiceBtn" class="btn btn-primary">
+                <i class="fas fa-dice-d6"></i> Roll Dice
+            </button>
+            <button id="resetGameBtn" class="btn btn-secondary">
+                <i class="fas fa-redo"></i> Reset Game
+            </button>
+        </div>
+    </div>
+
+    <!-- Game Over/Win Modal -->
+    <div id="gameModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle" class="modal-title"></h2>
+            <p id="modalMessage" class="modal-message"></p>
+            <button id="modalCloseBtn" class="modal-btn">Play Again</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase initialization (boilerplate - not used for game state persistence in this simple version)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables for Firebase (provided by Canvas environment)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app;
+        let db;
+        let auth;
+        let userId;
+
+        // Initialize Firebase and authenticate
+        const initFirebase = async () => {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("Firebase user ID:", userId);
+                        // You can now use userId for Firestore operations if needed
+                    } else {
+                        console.log("No user signed in. Attempting anonymous sign-in.");
+                        // Sign in anonymously if no user is signed in
+                        signInAnonymously(auth).then((userCredential) => {
+                            userId = userCredential.user.uid;
+                            console.log("Signed in anonymously. User ID:", userId);
+                        }).catch((error) => {
+                            console.error("Anonymous sign-in failed:", error);
+                        });
+                    }
+                });
+
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                    console.log("Signed in with custom token.");
+                } else {
+                    await signInAnonymously(auth);
+                    console.log("Signed in anonymously (initial).");
+                }
+            } catch (error) {
+                console.error("Firebase initialization or authentication failed:", error);
+            }
+        };
+
+        // Call Firebase initialization
+        initFirebase();
+
+
+        // --- Game Logic ---
+        const canvas = document.getElementById('gameBoard');
+        const ctx = canvas.getContext('2d');
+        const rollDiceBtn = document.getElementById('rollDiceBtn');
+        const resetGameBtn = document.getElementById('resetGameBtn');
+        const gameInfo = document.getElementById('gameInfo');
+        const gameModal = document.getElementById('gameModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+        const boardSize = 10; // 10x10 board
+        const numSquares = boardSize * boardSize; // Total squares
+        const numPlayers = 2; // Number of players
+        const playerColors = ['#EF4444', '#3B82F6', '#22C55E', '#F59E0B']; // Red, Blue, Green, Yellow
+        const playerIcons = ['&#128100;', '&#128101;', '&#128102;', '&#128103;']; // Simple emojis for players
+
+        let squareSize;
+        let playerPositions = []; // Array to store current position of each player (0-indexed)
+        let currentPlayer = 0; // Current player's turn (0-indexed)
+        let isGameOver = false;
+
+        // Define snakes and ladders (start: end)
+        // Note: These are 1-indexed for easier understanding of board squares
+        const snakes = {
+            16: 6, 47: 26, 49: 11, 56: 53, 62: 19,
+            64: 60, 87: 24, 93: 73, 95: 75, 98: 78
+        };
+        const ladders = {
+            1: 38, 4: 14, 9: 31, 21: 42, 28: 84,
+            36: 44, 51: 67, 71: 91, 80: 100
+        };
+
+        /**
+         * Initializes the game state.
+         */
+        function initializeGame() {
+            playerPositions = Array(numPlayers).fill(0); // All players start at square 0 (before square 1)
+            currentPlayer = 0;
+            isGameOver = false;
+            updateGameInfo();
+            drawBoard();
+            drawPlayers();
+            rollDiceBtn.disabled = false;
+            gameModal.classList.remove('show');
+        }
+
+        /**
+         * Resizes the canvas and redraws the game.
+         */
+        function resizeGame() {
+            const containerWidth = canvas.parentElement.clientWidth;
+            // Set canvas width to fill container, and height to be square
+            canvas.width = Math.min(containerWidth, 600); // Max width for board
+            canvas.height = canvas.width; // Keep it square
+            squareSize = canvas.width / boardSize;
+            drawBoard();
+            drawPlayers();
+        }
+
+        /**
+         * Converts a 1-indexed board square number to canvas (x, y) coordinates.
+         * Handles the zigzag (boustrophedon) numbering.
+         * @param {number} squareNum - The 1-indexed square number (1 to 100).
+         * @returns {{x: number, y: number}} - The pixel coordinates for the center of the square.
+         */
+        function getSquareCoordinates(squareNum) {
+            // Adjust to 0-indexed for calculations (0 to 99)
+            const adjustedSquareNum = squareNum - 1;
+            const row = Math.floor(adjustedSquareNum / boardSize);
+            let col = adjustedSquareNum % boardSize;
+
+            // Handle zigzag pattern (even rows go right to left)
+            if (row % 2 === 1) { // Odd rows (0-indexed) means even rows on the board (1-indexed)
+                col = boardSize - 1 - col;
+            }
+
+            const x = col * squareSize + squareSize / 2;
+            const y = (boardSize - 1 - row) * squareSize + squareSize / 2; // Y-axis starts from bottom
+            return { x, y };
+        }
+
+        /**
+         * Draws the game board on the canvas, including squares and numbers.
+         */
+        function drawBoard() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < numSquares; i++) {
+                const squareNum = i + 1;
+                const { x, y } = getSquareCoordinates(squareNum);
+
+                // Draw square background
+                ctx.fillStyle = (squareNum % 2 === 0) ? '#e9f5e9' : '#d4edda'; // Alternating light green shades
+                ctx.fillRect(x - squareSize / 2, y - squareSize / 2, squareSize, squareSize);
+
+                // Draw square border
+                ctx.strokeStyle = '#28a745';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x - squareSize / 2, y - squareSize / 2, squareSize, squareSize);
+
+                // Draw square number
+                ctx.fillStyle = '#333';
+                ctx.font = `${squareSize * 0.2}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(squareNum.toString(), x, y + squareSize * 0.3); // Adjust Y for better number placement
+
+                // Draw snakes and ladders
+                // Draw snakes
+                if (snakes[squareNum]) {
+                    const startCoords = getSquareCoordinates(squareNum);
+                    const endCoords = getSquareCoordinates(snakes[squareNum]);
+                    ctx.strokeStyle = '#8B4513'; // Brown for snakes
+                    ctx.lineWidth = squareSize * 0.05;
+                    ctx.beginPath();
+                    ctx.moveTo(startCoords.x, startCoords.y);
+                    ctx.lineTo(endCoords.x, endCoords.y);
+                    ctx.stroke();
+                    // Optional: Draw snake head/tail indicators
+                    drawArrow(ctx, startCoords.x, startCoords.y, endCoords.x, endCoords.y, squareSize * 0.1, '#8B4513');
+                }
+
+                // Draw ladders
+                if (ladders[squareNum]) {
+                    const startCoords = getSquareCoordinates(squareNum);
+                    const endCoords = getSquareCoordinates(ladders[squareNum]);
+                    ctx.strokeStyle = '#007BFF'; // Blue for ladders
+                    ctx.lineWidth = squareSize * 0.05;
+                    ctx.beginPath();
+                    ctx.moveTo(startCoords.x, startCoords.y);
+                    ctx.lineTo(endCoords.x, endCoords.y);
+                    ctx.stroke();
+                    // Optional: Draw ladder rungs (simplified)
+                    const midX = (startCoords.x + endCoords.x) / 2;
+                    const midY = (startCoords.y + endCoords.y) / 2;
+                    const angle = Math.atan2(endCoords.y - startCoords.y, endCoords.x - startCoords.x);
+                    const rungLength = squareSize * 0.4;
+                    ctx.save();
+                    ctx.translate(midX, midY);
+                    ctx.rotate(angle);
+                    ctx.strokeStyle = '#007BFF';
+                    ctx.lineWidth = squareSize * 0.03;
+                    ctx.beginPath();
+                    ctx.moveTo(-rungLength / 2, 0);
+                    ctx.lineTo(rungLength / 2, 0);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+        }
+
+        /**
+         * Draws an arrow head for snakes.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} fromX - Start X.
+         * @param {number} fromY - Start Y.
+         * @param {number} toX - End X.
+         * @param {number} toY - End Y.
+         * @param {number} arrowHeadSize - Size of the arrow head.
+         * @param {string} color - Color of the arrow.
+         */
+        function drawArrow(ctx, fromX, fromY, toX, toY, arrowHeadSize, color) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            ctx.save();
+            ctx.beginPath();
+            ctx.translate(toX, toY);
+            ctx.rotate(angle);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-arrowHeadSize, -arrowHeadSize / 2);
+            ctx.lineTo(-arrowHeadSize, arrowHeadSize / 2);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        /**
+         * Draws all player tokens on the board.
+         */
+        function drawPlayers() {
+            for (let i = 0; i < numPlayers; i++) {
+                // If player is at 0, draw them slightly off the board or at a "start" point
+                const currentSquare = playerPositions[i];
+                let { x, y } = getSquareCoordinates(currentSquare === 0 ? 1 : currentSquare);
+
+                // Offset players slightly if they are on the same square
+                const offset = (i - (numPlayers - 1) / 2) * (squareSize * 0.15);
+                x += offset;
+                y += offset;
+
+                // Draw player token (circle)
+                ctx.beginPath();
+                ctx.arc(x, y, squareSize * 0.18, 0, Math.PI * 2);
+                ctx.fillStyle = playerColors[i % playerColors.length];
+                ctx.fill();
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Draw player number/icon inside the token
+                ctx.fillStyle = 'white';
+                ctx.font = `${squareSize * 0.2}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText((i + 1).toString(), x, y);
+            }
+        }
+
+        /**
+         * Updates the game information display.
+         * @param {number} [diceRoll] - The result of the last dice roll.
+         */
+        function updateGameInfo(diceRoll = null) {
+            let infoText = `Player <span class="player-turn" style="color:${playerColors[currentPlayer]}"> ${currentPlayer + 1}</span>'s turn.`;
+            if (diceRoll !== null) {
+                infoText += ` You rolled a <span class="dice-result">${diceRoll}</span>.`;
+            }
+            gameInfo.innerHTML = infoText;
+        }
+
+        /**
+         * Simulates a dice roll.
+         * @returns {number} - A random number between 1 and 6.
+         */
+        function rollDice() {
+            if (isGameOver) return;
+
+            rollDiceBtn.disabled = true; // Disable button during turn
+
+            const diceRollResult = Math.floor(Math.random() * 6) + 1;
+            updateGameInfo(diceRollResult);
+
+            // Animate player movement
+            animatePlayerMove(playerPositions[currentPlayer], playerPositions[currentPlayer] + diceRollResult, diceRollResult);
+        }
+
+        /**
+         * Animates the player moving square by square.
+         * @param {number} startPos - The starting square (1-indexed).
+         * @param {number} targetPos - The final target square after dice roll (1-indexed).
+         * @param {number} steps - Number of steps to animate (dice roll result).
+         */
+        function animatePlayerMove(startPos, targetPos, steps) {
+            let currentAnimatedPos = startPos;
+            let stepCount = 0;
+
+            const animationInterval = setInterval(() => {
+                if (stepCount >= steps) {
+                    clearInterval(animationInterval);
+                    // After animation, apply snake/ladder logic
+                    movePlayer(targetPos);
+                    return;
+                }
+
+                currentAnimatedPos++;
+                playerPositions[currentPlayer] = currentAnimatedPos;
+                drawBoard();
+                drawPlayers();
+                stepCount++;
+            }, 200); // Adjust speed of animation
+        }
+
+        /**
+         * Moves the current player to a new position, checking for snakes/ladders and win condition.
+         * @param {number} newPos - The new position after dice roll.
+         */
+        function movePlayer(newPos) {
+            let finalPos = Math.min(newPos, numSquares); // Cannot go beyond 100
+
+            // Check for snakes and ladders
+            if (snakes[finalPos]) {
+                const oldPos = finalPos;
+                finalPos = snakes[finalPos];
+                showModal(`Oh no!`, `Player ${currentPlayer + 1} landed on a snake from ${oldPos} to ${finalPos}!`);
+            } else if (ladders[finalPos]) {
+                const oldPos = finalPos;
+                finalPos = ladders[finalPos];
+                showModal(`Yay!`, `Player ${currentPlayer + 1} found a ladder from ${oldPos} to ${finalPos}!`);
+            }
+
+            playerPositions[currentPlayer] = finalPos;
+            drawBoard();
+            drawPlayers();
+
+            // Check for win condition
+            if (playerPositions[currentPlayer] === numSquares) {
+                isGameOver = true;
+                showModal(`Game Over!`, `🎉 Player ${currentPlayer + 1} wins! 🎉`);
+                rollDiceBtn.disabled = true;
+            } else {
+                // Next player's turn
+                currentPlayer = (currentPlayer + 1) % numPlayers;
+                updateGameInfo();
+                rollDiceBtn.disabled = false; // Re-enable button for next player
+            }
+        }
+
+        /**
+         * Displays the game modal with a title and message.
+         * @param {string} title - The title for the modal.
+         * @param {string} message - The message content for the modal.
+         */
+        function showModal(title, message) {
+            modalTitle.textContent = title;
+            modalMessage.innerHTML = message; // Use innerHTML for potential emoji/bold
+            gameModal.classList.add('show');
+        }
+
+        /**
+         * Hides the game modal.
+         */
+        function hideModal() {
+            gameModal.classList.remove('show');
+        }
+
+        // --- Event Listeners ---
+        rollDiceBtn.addEventListener('click', rollDice);
+        resetGameBtn.addEventListener('click', initializeGame);
+        modalCloseBtn.addEventListener('click', initializeGame); // Close modal and reset game
+        window.addEventListener('resize', resizeGame);
+        window.onload = function() {
+            resizeGame(); // Initial size setup
+            initializeGame(); // Start the game
+        };
+    </script>
+</body>
+</html>
