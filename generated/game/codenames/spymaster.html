@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codenames Spyviewer Card Generator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the grid and buttons */
+        body {
+            font-family: "Inter", sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f0f2f5; /* Light grey background */
+            padding: 1rem;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.5rem; /* Gap between cells */
+            width: 100%;
+            max-width: 600px; /* Max width for larger screens */
+            aspect-ratio: 1 / 1; /* Keep grid square */
+        }
+        .grid-cell {
+            width: 100%;
+            height: 0;
+            padding-bottom: 100%; /* Makes cells square */
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem; /* Size of emojis */
+            border-radius: 0.5rem; /* Rounded corners for cells */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            transition: transform 0.1s ease-in-out;
+        }
+        .grid-cell:hover {
+            transform: translateY(-2px); /* Slight lift on hover */
+        }
+        .cell-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* Specific cell colors */
+        .bg-red-600 { background-color: #dc2626; } /* Tailwind red-600 */
+        .bg-blue-600 { background-color: #2563eb; } /* Tailwind blue-600 */
+        .bg-gray-300 { background-color: #d1d5db; } /* Tailwind gray-300 */
+        .bg-black { background-color: #000000; } /* Tailwind black */
+
+        /* Button styling */
+        .btn {
+            @apply px-6 py-3 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 ease-in-out;
+        }
+        .btn-primary {
+            @apply bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2;
+        }
+        .btn-secondary {
+            @apply bg-gray-500 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2;
+        }
+        .message-box {
+            @apply fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300 ease-in-out;
+        }
+        .message-box.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <h1 class="text-4xl font-bold text-gray-800 mb-8 text-center">Codenames Spyviewer</h1>
+
+    <div id="grid-container" class="grid-container mb-8">
+        <!-- Grid cells will be generated here by JavaScript -->
+    </div>
+
+    <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+        <button id="generate-button" class="btn btn-primary">
+            Generate New Card
+        </button>
+        <button id="copy-button" class="btn btn-secondary">
+            Copy Card (Emojis)
+        </button>
+    </div>
+
+    <!-- Message box for copy confirmation -->
+    <div id="message-box" class="message-box hidden">
+        Copied to clipboard!
+    </div>
+
+    <script>
+        // JavaScript for Codenames Spyviewer Card Generator
+
+        // Get references to DOM elements
+        const gridContainer = document.getElementById('grid-container');
+        const generateButton = document.getElementById('generate-button');
+        const copyButton = document.getElementById('copy-button');
+        const messageBox = document.getElementById('message-box');
+
+        // Define card types and their counts
+        const CARD_TYPES = {
+            RED_AGENT: { count: 0, emoji: '❤️', colorClass: 'bg-red-600' },
+            BLUE_AGENT: { count: 0, emoji: '💙', colorClass: 'bg-blue-600' },
+            INNOCENT_BYSTANDER: { count: 7, emoji: '🤍', colorClass: 'bg-gray-300' },
+            ASSASSIN: { count: 1, emoji: '🖤', colorClass: 'bg-black' }
+        };
+
+        // Function to shuffle an array
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+            }
+        }
+
+        // Function to generate the Codenames card
+        function generateCard() {
+            // Randomly determine which team starts (has 9 cards)
+            const startingTeam = Math.random() < 0.5 ? 'RED' : 'BLUE';
+
+            // Set counts based on starting team
+            if (startingTeam === 'RED') {
+                CARD_TYPES.RED_AGENT.count = 9;
+                CARD_TYPES.BLUE_AGENT.count = 8;
+            } else {
+                CARD_TYPES.RED_AGENT.count = 8;
+                CARD_TYPES.BLUE_AGENT.count = 9;
+            }
+
+            // Create an array to hold all card types
+            const cards = [];
+            for (const typeKey in CARD_TYPES) {
+                const type = CARD_TYPES[typeKey];
+                for (let i = 0; i < type.count; i++) {
+                    cards.push(type);
+                }
+            }
+
+            // Shuffle the cards to randomize their positions
+            shuffleArray(cards);
+
+            // Clear previous grid
+            gridContainer.innerHTML = '';
+
+            // Render the grid
+            cards.forEach((card, index) => {
+                const cell = document.createElement('div');
+                cell.classList.add('grid-cell', card.colorClass);
+                cell.setAttribute('data-type', card.emoji); // Store emoji for copying
+
+                const content = document.createElement('div');
+                content.classList.add('cell-content');
+                content.textContent = card.emoji;
+                cell.appendChild(content);
+
+                gridContainer.appendChild(cell);
+            });
+        }
+
+        // Function to copy the generated card to clipboard
+        function copyCardToClipboard() {
+            let cardText = '';
+            const cells = gridContainer.querySelectorAll('.grid-cell');
+            cells.forEach((cell, index) => {
+                cardText += cell.getAttribute('data-type');
+                if ((index + 1) % 5 === 0) {
+                    cardText += '\n'; // New line after every 5 cells
+                }
+            });
+
+            // Use document.execCommand for broader compatibility in iframes
+            const textarea = document.createElement('textarea');
+            textarea.value = cardText.trim(); // Trim any trailing newline
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showMessageBox(); // Show success message
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                // Fallback for browsers where execCommand is deprecated or fails
+                alert('Could not copy to clipboard. Please copy manually:\n\n' + cardText.trim());
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        }
+
+        // Function to show a temporary message box
+        function showMessageBox() {
+            messageBox.classList.remove('hidden');
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 2000); // Hide after 2 seconds
+        }
+
+        // Event Listeners
+        generateButton.addEventListener('click', generateCard);
+        copyButton.addEventListener('click', copyCardToClipboard);
+
+        // Generate the initial card when the page loads
+        window.onload = generateCard;
+    </script>
+</body>
+</html>

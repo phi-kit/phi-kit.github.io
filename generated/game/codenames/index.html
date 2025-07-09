@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codenames</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the game */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Rounded corners for the container */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem;
+            max-width: 1200px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .word-card {
+            background-color: #f8fafc; /* Light gray for unrevealed cards */
+            border-radius: 0.75rem; /* Rounded corners for cards */
+            padding: 1.25rem 0.75rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 600; /* font-semibold */
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: transform 0.1s ease-in-out, background-color 0.3s ease;
+            text-align: center;
+            color: #334155; /* slate-700 */
+            border: 2px solid #e2e8f0; /* slate-200 */
+            user-select: none; /* Prevent text selection */
+        }
+
+        .word-card:hover:not(.revealed) {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .word-card.revealed {
+            cursor: default;
+            color: white; /* Text color for revealed cards */
+            border: none; /* No border for revealed cards */
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2); /* Inner shadow for revealed */
+        }
+
+        /* Revealed card colors */
+        .word-card.red {
+            background-color: #ef4444; /* red-500 */
+        }
+        .word-card.blue {
+            background-color: #3b82f6; /* blue-500 */
+        }
+        .word-card.neutral {
+            background-color: #a1a1aa; /* zinc-400 */
+        }
+        .word-card.assassin {
+            background-color: #1f2937; /* gray-900 */
+        }
+
+        /* Spymaster view colors */
+        .spymaster-view .word-card.red-spymaster {
+            background-color: #fca5a5; /* red-300 */
+        }
+        .spymaster-view .word-card.blue-spymaster {
+            background-color: #93c5fd; /* blue-300 */
+        }
+        .spymaster-view .word-card.neutral-spymaster {
+            background-color: #d4d4d8; /* zinc-300 */
+        }
+        .spymaster-view .word-card.assassin-spymaster {
+            background-color: #6b7280; /* gray-500 */
+        }
+
+        /* Darker text for spymaster view cards */
+        .spymaster-view .word-card.red-spymaster,
+        .spymaster-view .word-card.blue-spymaster,
+        .spymaster-view .word-card.neutral-spymaster,
+        .spymaster-view .word-card.assassin-spymaster {
+            color: #1f2937; /* gray-900 */
+        }
+
+        /* Button styling */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-transform: uppercase;
+        }
+
+        .btn-primary {
+            background-color: #10b981; /* emerald-500 */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #059669; /* emerald-600 */
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: #6b7280; /* gray-500 */
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563; /* gray-600 */
+            transform: translateY(-2px);
+        }
+
+        .btn-toggle {
+            background-color: #e2e8f0; /* slate-200 */
+            color: #334155; /* slate-700 */
+        }
+        .btn-toggle:hover {
+            background-color: #cbd5e1; /* slate-300 */
+            transform: translateY(-2px);
+        }
+        .btn-toggle.active {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+        }
+
+        /* Score display */
+        .score-display {
+            font-size: 1.5rem; /* text-2xl */
+            font-weight: 700; /* font-bold */
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        .score-red {
+            color: #ef4444; /* red-500 */
+        }
+        .score-blue {
+            color: #3b82f6; /* blue-500 */
+        }
+
+        .turn-indicator {
+            font-size: 1.5rem; /* text-2xl */
+            font-weight: 700; /* font-bold */
+            text-align: center;
+        }
+        .turn-red {
+            color: #ef4444; /* red-500 */
+        }
+        .turn-blue {
+            color: #3b82f6; /* blue-500 */
+        }
+
+        .message-box {
+            background-color: #fef3c7; /* amber-100 */
+            color: #92400e; /* amber-800 */
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-weight: 500;
+            text-align: center;
+            border: 1px solid #fbbf24; /* amber-400 */
+        }
+
+        /* Responsive grid for word cards */
+        @media (min-width: 640px) { /* sm */
+            .grid-cols-5 {
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="text-4xl font-bold text-center text-gray-800 mb-6">Codenames</h1>
+
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+            <div class="score-display">
+                <span class="score-red" id="redScore">Red: 9</span>
+                <span class="score-blue" id="blueScore">Blue: 8</span>
+            </div>
+            <div class="turn-indicator" id="turnIndicator">Red Team's Turn</div>
+            <div class="flex gap-2">
+                <button id="spymasterToggle" class="btn btn-toggle">Spymaster View</button>
+                <button id="newGameButton" class="btn btn-primary">New Game</button>
+            </div>
+        </div>
+
+        <div id="messageBox" class="message-box hidden mb-6"></div>
+
+        <div id="gameBoard" class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+            <!-- Word cards will be injected here by JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // Array of words for the game
+        const WORDS = [
+            "Apple", "Band", "Bank", "Bark", "Bat", "Beach", "Bear", "Bed", "Bell", "Block",
+            "Board", "Bolt", "Bomb", "Book", "Boot", "Bottle", "Bow", "Box", "Bridge", "Brush",
+            "Bug", "Button", "Calf", "Cap", "Card", "Cat", "Cell", "Chair", "Chalk", "Charge",
+            "Check", "Chest", "Chip", "Chocolate", "Church", "Circle", "Clip", "Cloud", "Coat", "Code",
+            "Cold", "Comb", "Compound", "Concert", "Copper", "Cotton", "Court", "Cover", "Crack", "Craft",
+            "Crane", "Crank", "Crash", "Credit", "Cross", "Crown", "Cycle", "Date", "Deck", "Degree",
+            "Diamond", "Dice", "Dinosaur", "Dish", "Doctor", "Dog", "Doll", "Door", "Draft", "Dragon",
+            "Dress", "Drill", "Drink", "Drive", "Drop", "Drum", "Duck", "Dust", "Ear", "Earth",
+            "Engine", "Europe", "Eye", "Face", "Fair", "Fall", "Fan", "Farm", "Feather", "Fence",
+            "Field", "Figure", "File", "Film", "Fire", "Fish", "Flag", "Flame", "Flash", "Flight",
+            "Float", "Floor", "Flower", "Fly", "Fold", "Foot", "Force", "Fork", "Form", "Frame",
+            "Frog", "Front", "Game", "Gas", "Giant", "Glass", "Glove", "Gold", "Good", "Grape",
+            "Grass", "Green", "Ground", "Guard", "Hammer", "Hand", "Harbor", "Head", "Heart", "Heel",
+            "Hole", "Hook", "Horn", "Horse", "Hospital", "Hotel", "Ice", "Inch", "Index", "Iron",
+            "Jack", "Jam", "Jet", "Jig", "Joint", "Judge", "Juice", "Jump", "Key", "Kid",
+            "King", "Kitchen", "Kite", "Knight", "Lab", "Ladder", "Lady", "Lamp", "Land", "Laser",
+            "Law", "Lead", "Leaf", "Leg", "Lemon", "Letter", "Life", "Light", "Lime", "Line",
+            "Link", "Lion", "Lip", "Liquid", "Lock", "Log", "Long", "Lounge", "Luck", "Mail",
+            "Mammoth", "Map", "March", "Mark", "Mask", "Match", "May", "Maze", "Meat", "Medicine",
+            "Mexico", "Microscope", "Milk", "Mine", "Mint", "Miss", "Model", "Mole", "Moon", "Morning",
+            "Mountain", "Mouse", "Mouth", "Mug", "Nail", "Needle", "Net", "New", "Night", "Note",
+            "Novel", "Nurse", "Nut", "Ocean", "Oil", "Olive", "Opera", "Orange", "Organ", "Palm",
+            "Pan", "Pants", "Paper", "Park", "Part", "Pass", "Paste", "Patch", "Path", "Patient",
+            "Peace", "Peach", "Pen", "Penguin", "Pepper", "Pet", "Piano", "Pie", "Pig", "Pike",
+            "Pilot", "Pin", "Pine", "Pipe", "Pistol", "Pitch", "Plane", "Plastic", "Plate", "Play",
+            "Plot", "Point", "Poison", "Pole", "Police", "Pond", "Pool", "Port", "Post", "Pot",
+            "Pound", "Press", "Prince", "Princess", "Pumpkin", "Punch", "Pupil", "Pyramid", "Queen", "Rabbit",
+            "Race", "Radio", "Rag", "Rail", "Rainbow", "Ram", "Rat", "Ray", "Red", "Rent",
+            "Reply", "Rest", "Rhino", "Rice", "Rifle", "Ring", "River", "Road", "Robot", "Rock",
+            "Rod", "Roll", "Roof", "Room", "Rose", "Row", "Ruler", "Rust", "Safe", "Sail",
+            "Salt", "Sand", "Scale", "School", "Score", "Screen", "Screw", "Seal", "Season", "Seed",
+            "Sense", "Server", "Shadow", "Shake", "Shape", "Shark", "Sheep", "Sheet", "Shell", "Ship",
+            "Shoe", "Shop", "Shot", "Show", "Side", "Sign", "Silver", "Sink", "Skate", "Ski",
+            "Skirt", "Sky", "Slam", "Sleep", "Slide", "Sling", "Slip", "Slope", "Smash", "Smile",
+            "Smoke", "Snake", "Snow", "Soap", "Sock", "Soft", "Solid", "Sound", "Space", "Spike",
+            "Spine", "Spirit", "Spoon", "Spot", "Spring", "Square", "Stadium", "Staff", "Stamp", "Star",
+            "State", "Stick", "Stock", "Stone", "Store", "Stove", "Straw", "Stream", "Street", "Strike",
+            "String", "Stripe", "Sub", "Suit", "Sun", "Super", "Swing", "Switch", "Table", "Tablet",
+            "Tag", "Tail", "Tank", "Tap", "Taste", "Tea", "Team", "Tear", "Teeth", "Temple",
+            "Tennis", "Tent", "Test", "Text", "Thread", "Thumb", "Tick", "Tie", "Tiger", "Time",
+            "Tip", "Tire", "Toast", "Toe", "Tongue", "Tooth", "Top", "Torch", "Tower", "Track",
+            "Train", "Trap", "Travel", "Tree", "Trick", "Trip", "Trophy", "Truck", "Tube", "Turkey",
+            "Turn", "Turtle", "Type", "Under", "Unicorn", "Uniform", "Unit", "Vacuum", "Van", "Vase",
+            "Vest", "Vet", "View", "Village", "Virus", "Voice", "Volcano", "Volume", "Walk", "Wall",
+            "War", "Warm", "Washer", "Watch", "Water", "Wave", "Wax", "Web", "Well", "Whale",
+            "Wheel", "White", "Wife", "Wind", "Window", "Wine", "Wing", "Wire", "Wolf", "Wood",
+            "Word", "Worm", "Yard", "Yellow", "Yogurt", "Zebra", "Zero", "Zone", "Zoo"
+        ];
+
+        // Game state variables
+        let gameBoard = []; // Stores objects: { word: "...", type: "red/blue/neutral/assassin", revealed: false }
+        let redScore = 0;
+        let blueScore = 0;
+        let currentTurn = 'red'; // 'red' or 'blue'
+        let isSpymasterView = false;
+        let gameOver = false;
+
+        // DOM elements
+        const gameBoardElement = document.getElementById('gameBoard');
+        const redScoreElement = document.getElementById('redScore');
+        const blueScoreElement = document.getElementById('blueScore');
+        const turnIndicatorElement = document.getElementById('turnIndicator');
+        const spymasterToggle = document.getElementById('spymasterToggle');
+        const newGameButton = document.getElementById('newGameButton');
+        const messageBox = document.getElementById('messageBox');
+
+        /**
+         * Shuffles an array in place using the Fisher-Yates (Knuth) algorithm.
+         * @param {Array} array The array to shuffle.
+         */
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+            }
+        }
+
+        /**
+         * Initializes a new game board with random words and assignments.
+         */
+        function initializeGame() {
+            gameOver = false;
+            messageBox.classList.add('hidden'); // Hide any previous messages
+
+            // Select 25 unique words
+            shuffleArray(WORDS);
+            const selectedWords = WORDS.slice(0, 25);
+
+            // Assign types: 9 Red, 8 Blue, 1 Assassin, 7 Neutral (Red starts)
+            const types = [];
+            for (let i = 0; i < 9; i++) types.push('red');
+            for (let i = 0; i < 8; i++) types.push('blue');
+            types.push('assassin');
+            for (let i = 0; i < 7; i++) types.push('neutral');
+
+            shuffleArray(types);
+
+            gameBoard = selectedWords.map((word, index) => ({
+                word: word,
+                type: types[index],
+                revealed: false
+            }));
+
+            redScore = 9;
+            blueScore = 8;
+            currentTurn = 'red'; // Red team always starts
+
+            updateDisplay();
+            renderBoard();
+        }
+
+        /**
+         * Renders the game board based on the current game state.
+         */
+        function renderBoard() {
+            gameBoardElement.innerHTML = ''; // Clear existing cards
+            gameBoardElement.classList.toggle('spymaster-view', isSpymasterView); // Apply spymaster view class to grid container
+
+            gameBoard.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('word-card');
+                cardElement.textContent = card.word;
+                cardElement.dataset.index = index; // Store index for easy lookup
+
+                // Apply revealed class if already revealed
+                if (card.revealed) {
+                    cardElement.classList.add('revealed', card.type);
+                } else if (isSpymasterView) {
+                    // Apply spymaster specific colors if not revealed and in spymaster view
+                    cardElement.classList.add(`${card.type}-spymaster`);
+                }
+
+                cardElement.addEventListener('click', () => handleCardClick(index));
+                gameBoardElement.appendChild(cardElement);
+            });
+        }
+
+        /**
+         * Updates the score, turn indicator, and spymaster toggle text.
+         */
+        function updateDisplay() {
+            redScoreElement.textContent = `Red: ${redScore}`;
+            blueScoreElement.textContent = `Blue: ${blueScore}`;
+            turnIndicatorElement.textContent = `${currentTurn === 'red' ? 'Red' : 'Blue'} Team's Turn`;
+            turnIndicatorElement.className = `turn-indicator ${currentTurn === 'red' ? 'turn-red' : 'turn-blue'}`;
+
+            spymasterToggle.classList.toggle('active', isSpymasterView);
+            spymasterToggle.textContent = isSpymasterView ? 'Operative View' : 'Spymaster View';
+        }
+
+        /**
+         * Displays a message to the user.
+         * @param {string} message The message to display.
+         * @param {string} type Optional. 'success', 'error', 'info'. Defaults to 'info'.
+         */
+        function showMessage(message, type = 'info') {
+            messageBox.textContent = message;
+            messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'border-red-400', 'bg-green-100', 'text-green-800', 'border-green-400', 'bg-yellow-100', 'text-yellow-800', 'border-yellow-400');
+
+            if (type === 'error') {
+                messageBox.classList.add('bg-red-100', 'text-red-800', 'border-red-400');
+            } else if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'text-green-800', 'border-green-400');
+            } else { // info
+                messageBox.classList.add('bg-yellow-100', 'text-yellow-800', 'border-yellow-400');
+            }
+            messageBox.classList.remove('hidden');
+        }
+
+        /**
+         * Handles a card click event.
+         * @param {number} index The index of the clicked card in the gameBoard array.
+         */
+        function handleCardClick(index) {
+            if (gameOver || gameBoard[index].revealed || isSpymasterView) {
+                return; // Do nothing if game is over, card is revealed, or in spymaster view
+            }
+
+            const clickedCard = gameBoard[index];
+            clickedCard.revealed = true;
+
+            // Update the DOM for the clicked card immediately
+            const cardElement = gameBoardElement.children[index];
+            cardElement.classList.add('revealed', clickedCard.type);
+            cardElement.classList.remove(`${clickedCard.type}-spymaster`); // Remove spymaster class if it was there
+
+            let turnEnds = false;
+
+            if (clickedCard.type === 'assassin') {
+                showMessage(`${currentTurn === 'red' ? 'Blue' : 'Red'} Team wins! The ${currentTurn === 'red' ? 'Red' : 'Blue'} Team chose the assassin!`, 'error');
+                gameOver = true;
+                turnEnds = true; // Game ends, so turn effectively ends
+            } else if (clickedCard.type === currentTurn) {
+                if (currentTurn === 'red') {
+                    redScore--;
+                } else {
+                    blueScore--;
+                }
+                showMessage(`${currentTurn === 'red' ? 'Red' : 'Blue'} Team found their word! ${currentTurn === 'red' ? 'Red' : 'Blue'} Team gets another guess.`);
+            } else if (clickedCard.type !== currentTurn) {
+                showMessage(`${currentTurn === 'red' ? 'Red' : 'Blue'} Team chose a ${clickedCard.type} word. Turn ends.`);
+                turnEnds = true;
+            } else if (clickedCard.type === 'neutral') {
+                showMessage(`${currentTurn === 'red' ? 'Red' : 'Blue'} Team chose a neutral word. Turn ends.`);
+                turnEnds = true;
+            }
+
+            updateDisplay();
+
+            // Check for win condition
+            if (redScore === 0) {
+                showMessage('Red Team wins!', 'success');
+                gameOver = true;
+            } else if (blueScore === 0) {
+                showMessage('Blue Team wins!', 'success');
+                gameOver = true;
+            }
+
+            if (gameOver) {
+                // Reveal all cards if game is over
+                gameBoard.forEach((card, idx) => {
+                    if (!card.revealed) {
+                        card.revealed = true;
+                        gameBoardElement.children[idx].classList.add('revealed', card.type);
+                        gameBoardElement.children[idx].classList.remove(`${card.type}-spymaster`);
+                    }
+                });
+                turnIndicatorElement.textContent = 'Game Over!';
+                turnIndicatorElement.className = 'turn-indicator'; // Remove color class
+            } else if (turnEnds) {
+                // Switch turn if turn ended
+                currentTurn = currentTurn === 'red' ? 'blue' : 'red';
+                updateDisplay();
+            }
+        }
+
+        // Event Listeners
+        spymasterToggle.addEventListener('click', () => {
+            isSpymasterView = !isSpymasterView;
+            renderBoard(); // Re-render to apply/remove spymaster colors
+            updateDisplay(); // Update toggle button text
+        });
+
+        newGameButton.addEventListener('click', initializeGame);
+
+        // Initialize the game when the page loads
+        document.addEventListener('DOMContentLoaded', initializeGame);
+    </script>
+</body>
+</html>
