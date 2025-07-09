@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Die Roll Simulator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the die roll animation */
+        @keyframes roll {
+            0% { transform: rotateY(0deg) rotateX(0deg); }
+            25% { transform: rotateY(90deg) rotateX(90deg); }
+            50% { transform: rotateY(180deg) rotateX(180deg); }
+            75% { transform: rotateY(270deg) rotateX(270deg); }
+            100% { transform: rotateY(360deg) rotateX(360deg); }
+        }
+
+        .rolling-animation {
+            animation: roll 0.5s ease-out;
+        }
+
+        /* Set Inter font */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
+        <h1 class="text-4xl font-extrabold text-gray-800 mb-6">🎲 Die Roll Simulator</h1>
+
+        <!-- Die display area -->
+        <div id="dieResult" class="text-8xl font-bold text-indigo-600 mb-8 flex items-center justify-center h-32 w-32 mx-auto bg-indigo-50 rounded-xl shadow-inner transition-transform duration-300 ease-out">
+            ?
+        </div>
+
+        <!-- Roll button -->
+        <button id="rollButton" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-8 rounded-full shadow-lg transform transition duration-200 ease-in-out hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50">
+            Roll the Die!
+        </button>
+
+        <!-- Message box for any alerts (replacing alert()) -->
+        <div id="messageBox" class="hidden mt-6 p-3 bg-red-100 text-red-700 rounded-lg border border-red-200" role="alert">
+            <p id="messageText"></p>
+            <button onclick="document.getElementById('messageBox').classList.add('hidden')" class="ml-auto text-red-700 hover:text-red-900 font-bold">
+                &times;
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Get references to the DOM elements
+        const dieResult = document.getElementById('dieResult');
+        const rollButton = document.getElementById('rollButton');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+
+        /**
+         * Displays a message in the custom message box.
+         * @param {string} message - The message to display.
+         * @param {string} type - The type of message (e.g., 'error', 'info').
+         */
+        function showMessage(message, type = 'info') {
+            messageText.textContent = message;
+            messageBox.classList.remove('hidden');
+            // You can add more styling based on 'type' if needed
+            if (type === 'error') {
+                messageBox.classList.remove('bg-green-100', 'text-green-700', 'border-green-200');
+                messageBox.classList.add('bg-red-100', 'text-red-700', 'border-red-200');
+            } else {
+                messageBox.classList.remove('bg-red-100', 'text-red-700', 'border-red-200');
+                messageBox.classList.add('bg-blue-100', 'text-blue-700', 'border-blue-200');
+            }
+        }
+
+        /**
+         * Simulates a die roll and updates the display.
+         */
+        function rollDie() {
+            // Add a rolling animation class
+            dieResult.classList.add('rolling-animation');
+            dieResult.textContent = '?'; // Show a question mark during animation
+
+            // Remove the animation class after it completes and update the number
+            setTimeout(() => {
+                const randomNumber = Math.floor(Math.random() * 6) + 1; // Generates a number between 1 and 6
+                dieResult.textContent = randomNumber;
+                dieResult.classList.remove('rolling-animation');
+            }, 500); // Match this timeout to the animation duration
+        }
+
+        // Add event listener to the roll button
+        rollButton.addEventListener('click', rollDie);
+
+        // Initial state: hide message box
+        messageBox.classList.add('hidden');
+    </script>
+</body>
+</html>

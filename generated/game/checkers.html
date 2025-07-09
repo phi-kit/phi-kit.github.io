@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkers Game</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            background-color: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 90%;
+            width: 600px; /* Max width for the game container */
+        }
+
+        .board-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            width: 100%; /* Make board responsive within its container */
+            max-width: 560px; /* Max width for the board itself */
+            aspect-ratio: 1 / 1; /* Keep it square */
+            border: 4px solid #333;
+            border-radius: 8px;
+            overflow: hidden; /* Ensures rounded corners on cells */
+        }
+
+        .square {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        .light {
+            background-color: #f0d9b5; /* Light wood color */
+        }
+
+        .dark {
+            background-color: #b58863; /* Dark wood color */
+        }
+
+        .square.selected {
+            background-color: #a0c4ff; /* Light blue for selected square */
+            border: 2px solid #007bff;
+            box-sizing: border-box;
+        }
+
+        .square.highlight {
+            background-color: #8aff8a; /* Green for valid move highlight */
+            border: 2px solid #00aa00;
+            box-sizing: border-box;
+        }
+
+        .piece {
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            transition: transform 0.1s ease-in-out;
+        }
+
+        .piece:active {
+            transform: scale(0.95);
+        }
+
+        .red-piece {
+            background-color: #dc2626; /* Red-600 */
+        }
+
+        .black-piece {
+            background-color: #1f2937; /* Gray-800 */
+        }
+
+        .king-crown {
+            font-size: 0.8em; /* Smaller crown */
+            margin-left: 2px;
+            color: gold; /* Gold crown */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .message-box {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #e2e8f0; /* Gray-200 */
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            width: 100%;
+            max-width: 560px;
+            box-sizing: border-box;
+        }
+
+        .reset-button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            background-color: #4f46e5; /* Indigo-600 */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .reset-button:hover {
+            background-color: #4338ca; /* Indigo-700 */
+            transform: translateY(-2px);
+        }
+
+        .reset-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .game-container {
+                padding: 15px;
+                width: 100%;
+                max-width: none;
+            }
+            .board-grid {
+                max-width: 100%;
+                border-width: 2px;
+            }
+            .message-box {
+                font-size: 1rem;
+                padding: 8px 15px;
+                max-width: 100%;
+            }
+            .reset-button {
+                padding: 10px 20px;
+                font-size: 1rem;
+            }
+            .piece {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div id="messageBox" class="message-box">Red's Turn</div>
+        <div id="board" class="board-grid"></div>
+        <button id="resetButton" class="reset-button">Reset Game</button>
+    </div>
+
+    <script>
+        // Game State Constants
+        const EMPTY = 0;
+        const RED_PIECE = 1;
+        const BLACK_PIECE = 2;
+        const RED_KING = 3;
+        const BLACK_KING = 4;
+
+        // Game Variables
+        let board = [];
+        let currentPlayer = RED_PIECE; // Red starts
+        let selectedPiece = null; // { row, col } of the currently selected piece
+        let forcedJumpAvailable = false; // True if a jump must be taken
+        let possibleMoves = []; // Stores valid moves for the selected piece
+        let possibleJumps = []; // Stores valid jumps for the selected piece
+
+        // DOM Elements
+        const boardElement = document.getElementById('board');
+        const messageBox = document.getElementById('messageBox');
+        const resetButton = document.getElementById('resetButton');
+
+        /**
+         * Initializes the game board to its starting state.
+         */
+        function initializeBoard() {
+            board = Array(8).fill(0).map(() => Array(8).fill(0));
+
+            // Place red pieces
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 8; col++) {
+                    if ((row + col) % 2 !== 0) { // Dark squares
+                        board[row][col] = RED_PIECE;
+                    }
+                }
+            }
+
+            // Place black pieces
+            for (let row = 5; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    if ((row + col) % 2 !== 0) { // Dark squares
+                        board[row][col] = BLACK_PIECE;
+                    }
+                }
+            }
+        }
+
+        /**
+         * Renders the current state of the board to the DOM.
+         */
+        function renderBoard() {
+            boardElement.innerHTML = ''; // Clear existing board
+
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const square = document.createElement('div');
+                    square.classList.add('square');
+                    square.classList.add((row + col) % 2 === 0 ? 'light' : 'dark');
+                    square.dataset.row = row;
+                    square.dataset.col = col;
+
+                    const pieceType = board[row][col];
+                    if (pieceType !== EMPTY) {
+                        const piece = document.createElement('div');
+                        piece.classList.add('piece');
+                        if (pieceType === RED_PIECE || pieceType === RED_KING) {
+                            piece.classList.add('red-piece');
+                        } else {
+                            piece.classList.add('black-piece');
+                        }
+                        if (pieceType === RED_KING || pieceType === BLACK_KING) {
+                            const crown = document.createElement('span');
+                            crown.innerHTML = '&#9818;'; // King crown symbol
+                            crown.classList.add('king-crown');
+                            piece.appendChild(crown);
+                        }
+                        square.appendChild(piece);
+                    }
+
+                    // Add click listener to each square
+                    square.addEventListener('click', handleSquareClick);
+                    boardElement.appendChild(square);
+                }
+            }
+            highlightSelectedAndPossibleMoves();
+        }
+
+        /**
+         * Highlights the selected piece and its possible moves on the board.
+         */
+        function highlightSelectedAndPossibleMoves() {
+            // Remove all existing highlights
+            document.querySelectorAll('.square.selected, .square.highlight').forEach(s => {
+                s.classList.remove('selected', 'highlight');
+            });
+
+            if (selectedPiece) {
+                const { row, col } = selectedPiece;
+                const selectedSquare = document.querySelector(`.square[data-row="${row}"][data-col="${col}"]`);
+                if (selectedSquare) {
+                    selectedSquare.classList.add('selected');
+                }
+
+                // Highlight possible moves
+                possibleMoves.forEach(move => {
+                    const [targetRow, targetCol] = move;
+                    const targetSquare = document.querySelector(`.square[data-row="${targetRow}"][data-col="${targetCol}"]`);
+                    if (targetSquare) {
+                        targetSquare.classList.add('highlight');
+                    }
+                });
+            }
+        }
+
+        /**
+         * Handles a click event on a game board square.
+         * @param {Event} event - The click event.
+         */
+        function handleSquareClick(event) {
+            const clickedRow = parseInt(event.currentTarget.dataset.row);
+            const clickedCol = parseInt(event.currentTarget.dataset.col);
+
+            const pieceAtClicked = board[clickedRow][clickedCol];
+
+            // If no piece is selected yet
+            if (selectedPiece === null) {
+                // If clicked on an empty square or opponent's piece, do nothing
+                if (pieceAtClicked === EMPTY || !isCurrentPlayerPiece(pieceAtClicked)) {
+                    return;
+                }
+                // Select the piece
+                selectedPiece = { row: clickedRow, col: clickedCol };
+                updatePossibleMoves();
+                renderBoard(); // Re-render to show selection and highlights
+            } else {
+                // A piece is already selected, now try to move it
+                const { row: startRow, col: startCol } = selectedPiece;
+
+                // If clicked on the same piece again, deselect
+                if (startRow === clickedRow && startCol === clickedCol) {
+                    selectedPiece = null;
+                    possibleMoves = [];
+                    possibleJumps = [];
+                    renderBoard();
+                    return;
+                }
+
+                // Check if the clicked square is a valid move for the selected piece
+                const isValidMove = possibleMoves.some(move => move[0] === clickedRow && move[1] === clickedCol);
+
+                if (isValidMove) {
+                    makeMove(startRow, startCol, clickedRow, clickedCol);
+                } else {
+                    // If clicked on a different piece of the current player, select that one instead
+                    if (isCurrentPlayerPiece(pieceAtClicked)) {
+                        selectedPiece = { row: clickedRow, col: clickedCol };
+                        updatePossibleMoves();
+                        renderBoard();
+                    } else {
+                        // Invalid move or clicked on opponent's piece/empty square while a piece is selected
+                        selectedPiece = null; // Deselect
+                        possibleMoves = [];
+                        possibleJumps = [];
+                        renderBoard();
+                    }
+                }
+            }
+        }
+
+        /**
+         * Checks if the given piece type belongs to the current player.
+         * @param {number} pieceType - The type of the piece.
+         * @returns {boolean} True if it's the current player's piece, false otherwise.
+         */
+        function isCurrentPlayerPiece(pieceType) {
+            return (currentPlayer === RED_PIECE && (pieceType === RED_PIECE || pieceType === RED_KING)) ||
+                   (currentPlayer === BLACK_PIECE && (pieceType === BLACK_PIECE || pieceType === BLACK_KING));
+        }
+
+        /**
+         * Updates the possible moves and jumps for the currently selected piece.
+         * Determines if a forced jump is available for the current player.
+         */
+        function updatePossibleMoves() {
+            possibleMoves = [];
+            possibleJumps = [];
+            forcedJumpAvailable = false;
+
+            // First, find all possible jumps for the current player
+            const allPlayerJumps = [];
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if (isCurrentPlayerPiece(board[r][c])) {
+                        const jumps = getPossibleJumps(r, c);
+                        if (jumps.length > 0) {
+                            allPlayerJumps.push({ from: { row: r, col: c }, jumps: jumps });
+                        }
+                    }
+                }
+            }
+
+            if (allPlayerJumps.length > 0) {
+                forcedJumpAvailable = true;
+                messageBox.textContent = `${currentPlayer === RED_PIECE ? 'Red' : 'Black'}'s Turn - Must take a jump!`;
+
+                // If a piece is selected, only show its jumps
+                if (selectedPiece) {
+                    const selectedPieceJumps = allPlayerJumps.find(pj => pj.from.row === selectedPiece.row && pj.from.col === selectedPiece.col);
+                    if (selectedPieceJumps) {
+                        possibleJumps = selectedPieceJumps.jumps;
+                        possibleMoves = possibleJumps; // If forced jump, only jumps are valid moves
+                    } else {
+                        // Selected piece cannot jump, but other pieces can. Deselect and force player to pick a jumping piece.
+                        selectedPiece = null;
+                        possibleMoves = [];
+                        possibleJumps = [];
+                    }
+                } else {
+                    // No piece selected, but jumps are available. Player must select a piece that can jump.
+                    // No moves are highlighted until a jumping piece is selected.
+                    possibleMoves = [];
+                    possibleJumps = [];
+                }
+            } else {
+                // No forced jumps, calculate regular moves for selected piece
+                if (selectedPiece) {
+                    possibleMoves = getPossibleMoves(selectedPiece.row, selectedPiece.col);
+                    messageBox.textContent = `${currentPlayer === RED_PIECE ? 'Red' : 'Black'}'s Turn`;
+                } else {
+                    messageBox.textContent = `${currentPlayer === RED_PIECE ? 'Red' : 'Black'}'s Turn`;
+                }
+            }
+        }
+
+        /**
+         * Gets all possible non-jumping moves for a piece at (row, col).
+         * @param {number} row - The row of the piece.
+         * @param {number} col - The column of the piece.
+         * @returns {Array<Array<number>>} An array of [targetRow, targetCol] pairs.
+         */
+        function getPossibleMoves(row, col) {
+            const moves = [];
+            const pieceType = board[row][col];
+            const isKing = (pieceType === RED_KING || pieceType === BLACK_KING);
+            const direction = (pieceType === RED_PIECE || pieceType === RED_KING) ? 1 : -1; // 1 for red (down), -1 for black (up)
+
+            // Regular moves
+            const potentialMoves = [];
+            if (isKing || direction === 1) { // Red or King moves down
+                potentialMoves.push([row + 1, col - 1], [row + 1, col + 1]);
+            }
+            if (isKing || direction === -1) { // Black or King moves up
+                potentialMoves.push([row - 1, col - 1], [row - 1, col + 1]);
+            }
+
+            potentialMoves.forEach(([r, c]) => {
+                if (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] === EMPTY) {
+                    moves.push([r, c]);
+                }
+            });
+            return moves;
+        }
+
+        /**
+         * Gets all possible jumping moves for a piece at (row, col).
+         * @param {number} row - The row of the piece.
+         * @param {number} col - The column of the piece.
+         * @returns {Array<Array<number>>} An array of [targetRow, targetCol] pairs for jumps.
+         */
+        function getPossibleJumps(row, col) {
+            const jumps = [];
+            const pieceType = board[row][col];
+            const isKing = (pieceType === RED_KING || pieceType === BLACK_KING);
+            const opponentPieceType = (pieceType === RED_PIECE || pieceType === RED_KING) ? BLACK_PIECE : RED_PIECE;
+            const opponentKingType = (pieceType === RED_PIECE || pieceType === RED_KING) ? BLACK_KING : RED_KING;
+
+            const potentialJumps = [];
+            // Check all 4 diagonal directions for jumps
+            potentialJumps.push(
+                [row + 2, col - 2, row + 1, col - 1], // Down-left
+                [row + 2, col + 2, row + 1, col + 1], // Down-right
+                [row - 2, col - 2, row - 1, col - 1], // Up-left
+                [row - 2, col + 2, row - 1, col + 1]  // Up-right
+            );
+
+            potentialJumps.forEach(([targetR, targetC, jumpedR, jumpedC]) => {
+                // Ensure target square is within bounds and empty
+                if (targetR >= 0 && targetR < 8 && targetC >= 0 && targetC < 8 && board[targetR][targetC] === EMPTY) {
+                    // Ensure jumped-over square is within bounds
+                    if (jumpedR >= 0 && jumpedR < 8 && jumpedC >= 0 && jumpedC < 8) {
+                        const jumpedPiece = board[jumpedR][jumpedC];
+                        // Check if jumped piece is an opponent's piece (regular or king)
+                        if ((jumpedPiece === opponentPieceType || jumpedPiece === opponentKingType)) {
+                            // For regular pieces, ensure jump is in the forward direction
+                            if (!isKing) {
+                                if ((pieceType === RED_PIECE && targetR > row) || (pieceType === BLACK_PIECE && targetR < row)) {
+                                    jumps.push([targetR, targetC]);
+                                }
+                            } else { // King can jump in any direction
+                                jumps.push([targetR, targetC]);
+                            }
+                        }
+                    }
+                }
+            });
+            return jumps;
+        }
+
+        /**
+         * Executes a move on the board.
+         * @param {number} startRow - The starting row.
+         * @param {number} startCol - The starting column.
+         * @param {number} endRow - The target row.
+         * @param {number} endCol - The target column.
+         */
+        function makeMove(startRow, startCol, endRow, endCol) {
+            const pieceType = board[startRow][startCol];
+            board[endRow][endCol] = pieceType;
+            board[startRow][startCol] = EMPTY;
+
+            const isJump = Math.abs(startRow - endRow) === 2;
+
+            if (isJump) {
+                const jumpedRow = (startRow + endRow) / 2;
+                const jumpedCol = (startCol + endCol) / 2;
+                board[jumpedRow][jumpedCol] = EMPTY; // Remove jumped piece
+
+                // Check for multi-jump
+                selectedPiece = { row: endRow, col: endCol }; // Keep piece selected for potential multi-jump
+                updatePossibleMoves(); // Re-calculate possible moves/jumps from new position
+
+                if (possibleJumps.length > 0) {
+                    // Another jump is available for the same piece, force it
+                    messageBox.textContent = `${currentPlayer === RED_PIECE ? 'Red' : 'Black'}'s Turn - Multi-jump!`;
+                    renderBoard();
+                    return; // Don't switch turns yet
+                }
+            }
+
+            // Check for kinging
+            if (pieceType === RED_PIECE && endRow === 7) {
+                board[endRow][endCol] = RED_KING;
+            } else if (pieceType === BLACK_PIECE && endRow === 0) {
+                board[endRow][endCol] = BLACK_KING;
+            }
+
+            selectedPiece = null;
+            possibleMoves = [];
+            possibleJumps = [];
+            forcedJumpAvailable = false; // Reset forced jump status
+
+            checkWinCondition();
+            switchTurn();
+            renderBoard();
+        }
+
+        /**
+         * Switches the current player's turn.
+         */
+        function switchTurn() {
+            currentPlayer = (currentPlayer === RED_PIECE) ? BLACK_PIECE : RED_PIECE;
+            updatePossibleMoves(); // Check for forced jumps for the next player
+            renderMessageBox();
+        }
+
+        /**
+         * Updates the message box text.
+         */
+        function renderMessageBox() {
+            if (forcedJumpAvailable) {
+                messageBox.textContent = `${currentPlayer === RED_PIECE ? 'Red' : 'Black'}'s Turn - Must take a jump!`;
+            } else {
+                messageBox.textContent = `${currentPlayer === RED_PIECE ? 'Red' : 'Black'}'s Turn`;
+            }
+        }
+
+        /**
+         * Checks if a player has won the game.
+         */
+        function checkWinCondition() {
+            let redPieces = 0;
+            let blackPieces = 0;
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const piece = board[row][col];
+                    if (piece === RED_PIECE || piece === RED_KING) {
+                        redPieces++;
+                    } else if (piece === BLACK_PIECE || piece === BLACK_KING) {
+                        blackPieces++;
+                    }
+                }
+            }
+
+            if (redPieces === 0) {
+                messageBox.textContent = 'Black Wins!';
+                disableBoardClicks();
+            } else if (blackPieces === 0) {
+                messageBox.textContent = 'Red Wins!';
+                disableBoardClicks();
+            }
+        }
+
+        /**
+         * Disables click events on the board squares.
+         */
+        function disableBoardClicks() {
+            document.querySelectorAll('.square').forEach(square => {
+                square.removeEventListener('click', handleSquareClick);
+                square.style.cursor = 'default';
+            });
+        }
+
+        /**
+         * Enables click events on the board squares.
+         */
+        function enableBoardClicks() {
+             document.querySelectorAll('.square').forEach(square => {
+                square.addEventListener('click', handleSquareClick);
+                square.style.cursor = 'pointer';
+            });
+        }
+
+        /**
+         * Resets the game to its initial state.
+         */
+        function resetGame() {
+            initializeBoard();
+            currentPlayer = RED_PIECE;
+            selectedPiece = null;
+            forcedJumpAvailable = false;
+            possibleMoves = [];
+            possibleJumps = [];
+            renderBoard();
+            renderMessageBox();
+            enableBoardClicks();
+        }
+
+        // Event listener for the reset button
+        resetButton.addEventListener('click', resetGame);
+
+        // Initial game setup on window load
+        window.onload = function() {
+            resetGame();
+        };
+    </script>
+</body>
+</html>

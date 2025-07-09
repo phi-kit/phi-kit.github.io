@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64 Converter</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font for better aesthetics */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background */
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Base64 Converter</h1>
+
+        <div class="mb-4">
+            <label for="username" class="block text-gray-700 text-sm font-semibold mb-2">Username:</label>
+            <input
+                type="text"
+                id="username"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                placeholder="Enter username"
+            >
+        </div>
+
+        <div class="mb-6">
+            <label for="password" class="block text-gray-700 text-sm font-semibold mb-2">Password:</label>
+            <input
+                type="password"
+                id="password"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                placeholder="Enter password"
+            >
+        </div>
+
+        <button
+            id="convertButton"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+        >
+            Convert to Base64
+        </button>
+
+        <div class="mt-8">
+            <label for="base64Output" class="block text-gray-700 text-sm font-semibold mb-2">Base64 String:</label>
+            <div class="relative">
+                <textarea
+                    id="base64Output"
+                    rows="3"
+                    class="w-full p-4 border border-gray-300 rounded-lg bg-gray-50 text-gray-800 overflow-auto resize-none focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
+                    readonly
+                    placeholder="Your Base64 string will appear here..."
+                ></textarea>
+                <button
+                    id="copyButton"
+                    class="absolute top-2 right-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-1 px-3 rounded-lg text-sm transition duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50"
+                    title="Copy to clipboard"
+                >
+                    Copy
+                </button>
+            </div>
+            <p id="copyMessage" class="text-center text-sm text-green-600 mt-2 opacity-0 transition-opacity duration-300"></p>
+        </div>
+    </div>
+
+    <script>
+        // Get references to DOM elements
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const convertButton = document.getElementById('convertButton');
+        const base64Output = document.getElementById('base64Output');
+        const copyButton = document.getElementById('copyButton');
+        const copyMessage = document.getElementById('copyMessage');
+
+        /**
+         * Converts the username and password into a Base64 encoded string.
+         */
+        function convertToBase64() {
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+
+            // Combine username and password in the format "username:password"
+            const credentials = `${username}:${password}`;
+
+            // Encode the string to Base64
+            // btoa() is used for Base64 encoding. It expects a string to be encoded.
+            // It only works for ASCII characters. For Unicode, a more robust solution
+            // involving TextEncoder and Uint8Array would be needed, but for typical
+            // usernames/passwords, btoa is sufficient.
+            try {
+                const encodedString = btoa(credentials);
+                base64Output.value = encodedString;
+            } catch (e) {
+                // Handle potential errors, e.g., if the string contains characters
+                // outside of the Latin-1 character set (which btoa supports).
+                base64Output.value = 'Error: Could not encode. Ensure valid characters.';
+                console.error('Base64 encoding error:', e);
+            }
+        }
+
+        /**
+         * Copies the content of the Base64 output textarea to the clipboard.
+         * Provides visual feedback to the user.
+         */
+        function copyToClipboard() {
+            // Select the text in the textarea
+            base64Output.select();
+            base64Output.setSelectionRange(0, 99999); // For mobile devices
+
+            // Copy the text to the clipboard
+            // document.execCommand('copy') is used for clipboard operations
+            // as navigator.clipboard.writeText() might not work in some iframe environments.
+            try {
+                document.execCommand('copy');
+                // Show success message
+                copyMessage.textContent = 'Copied to clipboard!';
+                copyMessage.classList.remove('opacity-0');
+                copyMessage.classList.add('opacity-100');
+
+                // Hide message after a short delay
+                setTimeout(() => {
+                    copyMessage.classList.remove('opacity-100');
+                    copyMessage.classList.add('opacity-0');
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                copyMessage.textContent = 'Failed to copy!';
+                copyMessage.classList.remove('opacity-0');
+                copyMessage.classList.add('opacity-100', 'text-red-600'); // Indicate error with red text
+                setTimeout(() => {
+                    copyMessage.classList.remove('opacity-100', 'text-red-600');
+                    copyMessage.classList.add('opacity-0');
+                }, 2000);
+            }
+        }
+
+        // Add event listeners to the buttons
+        convertButton.addEventListener('click', convertToBase64);
+        copyButton.addEventListener('click', copyToClipboard);
+    </script>
+</body>
+</html>

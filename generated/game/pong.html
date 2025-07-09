@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classic Pong</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom CSS for Pong game aesthetics */
+        body {
+            font-family: 'Inter', sans-serif; /* Using Inter font */
+            background-color: #1a202c; /* Dark background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #2d3748; /* Slightly lighter dark background for container */
+            border-radius: 1rem; /* Rounded corners */
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.5); /* Subtle shadow */
+            padding: 1.5rem;
+            max-width: 90vw; /* Responsive width */
+            max-height: 90vh; /* Responsive height */
+            box-sizing: border-box;
+        }
+
+        canvas {
+            background-color: #000; /* Black background for the game area */
+            border: 2px solid #a0aec0; /* Light gray border */
+            border-radius: 0.5rem; /* Slightly rounded corners for canvas */
+            display: block;
+            touch-action: none; /* Disable touch gestures like scrolling/zooming */
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 1rem;
+            color: #e2e8f0; /* Light text color */
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .game-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 1.5rem;
+            width: 100%;
+        }
+
+        .game-message {
+            color: #e2e8f0;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .game-button {
+            background-color: #4299e1; /* Blue button */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem; /* Rounded corners */
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            background-image: linear-gradient(to bottom right, #4299e1, #3182ce);
+        }
+
+        .game-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
+            background-image: linear-gradient(to bottom right, #3182ce, #2b6cb0);
+        }
+
+        .game-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .game-info {
+                font-size: 1.2rem;
+            }
+            .game-message {
+                font-size: 1rem;
+            }
+            .game-button {
+                padding: 0.6rem 1.2rem;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="game-container">
+        <div class="game-info">
+            <div id="player1-score">Player 1: 0</div>
+            <div id="player2-score">Player 2: 0</div>
+        </div>
+        <canvas id="pongCanvas"></canvas>
+        <div class="game-controls">
+            <div id="game-message" class="game-message">Press "Start Game" to begin!</div>
+            <button id="startButton" class="game-button">Start Game</button>
+        </div>
+    </div>
+
+    <script>
+        // Get the canvas element and its 2D rendering context
+        const canvas = document.getElementById('pongCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Get score display elements
+        const player1ScoreDisplay = document.getElementById('player1-score');
+        const player2ScoreDisplay = document.getElementById('player2-score');
+        const gameMessageDisplay = document.getElementById('game-message');
+        const startButton = document.getElementById('startButton');
+
+        // Game variables
+        let player1Score = 0;
+        let player2Score = 0;
+        let gameRunning = false;
+        let animationFrameId;
+
+        // Game dimensions (will be set dynamically)
+        let CANVAS_WIDTH;
+        let CANVAS_HEIGHT;
+        let PADDLE_WIDTH;
+        let PADDLE_HEIGHT;
+        let BALL_RADIUS;
+        let PADDLE_SPEED;
+        let BALL_SPEED_X;
+        let BALL_SPEED_Y;
+
+        // Game objects
+        const player1 = {
+            x: 0,
+            y: 0,
+            dy: 0 // Change in y position
+        };
+
+        const player2 = {
+            x: 0,
+            y: 0,
+            dy: 0 // Change in y position
+        };
+
+        const ball = {
+            x: 0,
+            y: 0,
+            dx: 0, // Change in x position
+            dy: 0  // Change in y position
+        };
+
+        // Key states for smooth movement
+        const keysPressed = {};
+
+        // Function to set dynamic game dimensions based on canvas size
+        function setGameDimensions() {
+            // Set canvas dimensions based on viewport, maintaining aspect ratio
+            const aspectRatio = 16 / 9; // Common aspect ratio for games
+            const maxCanvasWidth = Math.min(window.innerWidth * 0.8, 800); // Max 80% of viewport width, up to 800px
+            const maxCanvasHeight = Math.min(window.innerHeight * 0.7, maxCanvasWidth / aspectRatio); // Max 70% of viewport height
+
+            CANVAS_WIDTH = maxCanvasWidth;
+            CANVAS_HEIGHT = CANVAS_WIDTH / aspectRatio; // Calculate height based on width and aspect ratio
+
+            // Ensure height doesn't exceed maxCanvasHeight
+            if (CANVAS_HEIGHT > maxCanvasHeight) {
+                CANVAS_HEIGHT = maxCanvasHeight;
+                CANVAS_WIDTH = CANVAS_HEIGHT * aspectRatio;
+            }
+
+            canvas.width = CANVAS_WIDTH;
+            canvas.height = CANVAS_HEIGHT;
+
+            // Scale game elements based on canvas size
+            PADDLE_WIDTH = CANVAS_WIDTH * 0.015; // 1.5% of canvas width
+            PADDLE_HEIGHT = CANVAS_HEIGHT * 0.15; // 15% of canvas height
+            BALL_RADIUS = CANVAS_WIDTH * 0.01; // 1% of canvas width
+            PADDLE_SPEED = CANVAS_HEIGHT * 0.01; // 1% of canvas height per frame
+            BALL_SPEED_X = CANVAS_WIDTH * 0.005; // 0.5% of canvas width per frame
+            BALL_SPEED_Y = CANVAS_HEIGHT * 0.005; // 0.5% of canvas height per frame
+
+            // Initial positions
+            player1.x = 10;
+            player1.y = (CANVAS_HEIGHT - PADDLE_HEIGHT) / 2;
+
+            player2.x = CANVAS_WIDTH - PADDLE_WIDTH - 10;
+            player2.y = (CANVAS_HEIGHT - PADDLE_HEIGHT) / 2;
+
+            resetBall(); // Reset ball position and direction after resizing
+        }
+
+        // Function to draw a rectangle (used for paddles)
+        function drawRect(x, y, width, height, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, width, height);
+        }
+
+        // Function to draw a circle (used for the ball)
+        function drawCircle(x, y, radius, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2, false);
+            ctx.fill();
+        }
+
+        // Function to reset the ball's position and direction
+        function resetBall() {
+            ball.x = CANVAS_WIDTH / 2;
+            ball.y = CANVAS_HEIGHT / 2;
+            // Randomize initial direction
+            ball.dx = (Math.random() > 0.5 ? 1 : -1) * BALL_SPEED_X;
+            ball.dy = (Math.random() > 0.5 ? 1 : -1) * BALL_SPEED_Y;
+        }
+
+        // Function to update game state
+        function update() {
+            if (!gameRunning) return;
+
+            // Update paddle positions
+            player1.y += player1.dy;
+            player2.y += player2.dy;
+
+            // Keep paddles within canvas bounds
+            player1.y = Math.max(0, Math.min(player1.y, CANVAS_HEIGHT - PADDLE_HEIGHT));
+            player2.y = Math.max(0, Math.min(player2.y, CANVAS_HEIGHT - PADDLE_HEIGHT));
+
+            // Update ball position
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Ball collision with top/bottom walls
+            if (ball.y - BALL_RADIUS < 0 || ball.y + BALL_RADIUS > CANVAS_HEIGHT) {
+                ball.dy *= -1; // Reverse Y direction
+            }
+
+            // Ball collision with paddles
+            // Player 1 paddle
+            if (ball.dx < 0 && // Moving left
+                ball.x - BALL_RADIUS < player1.x + PADDLE_WIDTH && // Ball's left edge past paddle's right edge
+                ball.y + BALL_RADIUS > player1.y && // Ball's bottom edge past paddle's top edge
+                ball.y - BALL_RADIUS < player1.y + PADDLE_HEIGHT) { // Ball's top edge past paddle's bottom edge
+                ball.dx *= -1; // Reverse X direction
+                // Add a slight random vertical speed change for more dynamic gameplay
+                ball.dy += (Math.random() - 0.5) * (BALL_SPEED_Y * 0.5);
+            }
+
+            // Player 2 paddle
+            if (ball.dx > 0 && // Moving right
+                ball.x + BALL_RADIUS > player2.x && // Ball's right edge past paddle's left edge
+                ball.y + BALL_RADIUS > player2.y && // Ball's bottom edge past paddle's top edge
+                ball.y - BALL_RADIUS < player2.y + PADDLE_HEIGHT) { // Ball's top edge past paddle's bottom edge
+                ball.dx *= -1; // Reverse X direction
+                // Add a slight random vertical speed change
+                ball.dy += (Math.random() - 0.5) * (BALL_SPEED_Y * 0.5);
+            }
+
+            // Ball out of bounds (scoring)
+            if (ball.x - BALL_RADIUS < 0) { // Player 2 scores
+                player2Score++;
+                player2ScoreDisplay.textContent = `Player 2: ${player2Score}`;
+                resetBall();
+            } else if (ball.x + BALL_RADIUS > CANVAS_WIDTH) { // Player 1 scores
+                player1Score++;
+                player1ScoreDisplay.textContent = `Player 1: ${player1Score}`;
+                resetBall();
+            }
+        }
+
+        // Function to render game elements
+        function render() {
+            // Clear canvas
+            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            drawRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, '#000'); // Redraw black background
+
+            // Draw paddles
+            drawRect(player1.x, player1.y, PADDLE_WIDTH, PADDLE_HEIGHT, '#e2e8f0'); // Player 1 (white)
+            drawRect(player2.x, player2.y, PADDLE_WIDTH, PADDLE_HEIGHT, '#e2e8f0'); // Player 2 (white)
+
+            // Draw ball
+            drawCircle(ball.x, ball.y, BALL_RADIUS, '#e2e8f0'); // Ball (white)
+
+            // Draw dashed line in the middle
+            ctx.strokeStyle = '#a0aec0'; // Light gray for the line
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.setLineDash([5, 15]); // Dash length, space length
+            ctx.moveTo(CANVAS_WIDTH / 2, 0);
+            ctx.lineTo(CANVAS_WIDTH / 2, CANVAS_HEIGHT);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset line dash
+        }
+
+        // Game loop
+        function gameLoop() {
+            update();
+            render();
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // Event listeners for paddle movement
+        document.addEventListener('keydown', (e) => {
+            keysPressed[e.key] = true;
+            updatePaddleMovement();
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keysPressed[e.key] = false;
+            updatePaddleMovement();
+        });
+
+        // Function to update paddle dy based on pressed keys
+        function updatePaddleMovement() {
+            // Player 1 (W/S)
+            if (keysPressed['w'] || keysPressed['W']) {
+                player1.dy = -PADDLE_SPEED;
+            } else if (keysPressed['s'] || keysPressed['S']) {
+                player1.dy = PADDLE_SPEED;
+            } else {
+                player1.dy = 0;
+            }
+
+            // Player 2 (ArrowUp/ArrowDown)
+            if (keysPressed['ArrowUp']) {
+                player2.dy = -PADDLE_SPEED;
+            } else if (keysPressed['ArrowDown']) {
+                player2.dy = PADDLE_SPEED;
+            } else {
+                player2.dy = 0;
+            }
+        }
+
+        // Touch controls for mobile
+        let touchStartY = {}; // Store starting Y for each touch identifier
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent scrolling
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                touchStartY[touch.identifier] = touch.clientY;
+            }
+            handleTouchMove(e); // Handle initial touch position
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault(); // Prevent scrolling
+            handleTouchMove(e);
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                delete touchStartY[touch.identifier];
+            }
+            // If no touches remain, stop paddle movement
+            if (Object.keys(touchStartY).length === 0) {
+                player1.dy = 0;
+                player2.dy = 0;
+            }
+        }, { passive: false });
+
+        function handleTouchMove(e) {
+            let player1Moved = false;
+            let player2Moved = false;
+
+            // Reset dy to 0 if no active touches are controlling a paddle
+            player1.dy = 0;
+            player2.dy = 0;
+
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                const touchX = touch.clientX;
+                const touchY = touch.clientY;
+
+                // Determine which paddle the touch is trying to control based on X position
+                const canvasRect = canvas.getBoundingClientRect();
+                const relativeX = touchX - canvasRect.left;
+                const relativeY = touchY - canvasRect.top;
+
+                const startY = touchStartY[touch.identifier];
+                if (startY === undefined) continue; // Skip if touchstart wasn't captured
+
+                const deltaY = relativeY - (startY - canvasRect.top); // Calculate movement relative to start
+
+                // Left half of the screen for Player 1
+                if (relativeX < CANVAS_WIDTH / 2) {
+                    player1Moved = true;
+                    if (deltaY < 0) { // Move up
+                        player1.dy = -PADDLE_SPEED;
+                    } else if (deltaY > 0) { // Move down
+                        player1.dy = PADDLE_SPEED;
+                    } else {
+                        player1.dy = 0;
+                    }
+                }
+                // Right half of the screen for Player 2
+                else {
+                    player2Moved = true;
+                    if (deltaY < 0) { // Move up
+                        player2.dy = -PADDLE_SPEED;
+                    } else if (deltaY > 0) { // Move down
+                        player2.dy = PADDLE_SPEED;
+                    } else {
+                        player2.dy = 0;
+                    }
+                }
+            }
+        }
+
+
+        // Start/Reset Game function
+        function startGame() {
+            if (gameRunning) {
+                cancelAnimationFrame(animationFrameId); // Stop any existing game loop
+            }
+            player1Score = 0;
+            player2Score = 0;
+            player1ScoreDisplay.textContent = `Player 1: ${player1Score}`;
+            player2ScoreDisplay.textContent = `Player 2: ${player2Score}`;
+            gameMessageDisplay.textContent = '';
+            setGameDimensions(); // Initialize/reset dimensions and positions
+            gameRunning = true;
+            startButton.textContent = 'Restart Game';
+            gameLoop();
+        }
+
+        // Event listener for the start button
+        startButton.addEventListener('click', startGame);
+
+        // Initial setup on window load and resize
+        window.onload = () => {
+            setGameDimensions(); // Set initial dimensions
+            render(); // Draw initial state
+        };
+
+        window.addEventListener('resize', () => {
+            setGameDimensions(); // Re-adjust dimensions on resize
+            render(); // Redraw game elements
+        });
+
+    </script>
+</body>
+</html>

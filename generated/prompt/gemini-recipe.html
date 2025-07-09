@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Generator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font for a cleaner look */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full text-center border border-gray-200">
+        <h1 class="text-3xl font-extrabold text-gray-800 mb-6">
+            Prompt Generator
+        </h1>
+
+        <p class="text-gray-600 mb-6">
+            Enter a word or phrase to complete the prompt generation.
+        </p>
+
+        <div class="mb-6">
+            <input
+                type="text"
+                id="gameWordInput"
+                placeholder="I want to make..."
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-gray-700"
+            />
+        </div>
+
+        <button
+            id="generateButton"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+        >
+            Generate Prompt
+        </button>
+
+        <div id="resultContainer" class="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-lg font-semibold hidden">
+            <p id="generatedSentence"></p>
+        </div>
+    </div>
+
+    <script>
+        // Get references to the HTML elements
+        const gameWordInput = document.getElementById('gameWordInput');
+        const generateButton = document.getElementById('generateButton');
+        const generatedSentence = document.getElementById('generatedSentence');
+        const resultContainer = document.getElementById('resultContainer');
+
+        /**
+         * Handles the click event on the generate button.
+         * Takes the input word and constructs the game recreation sentence.
+         */
+        generateButton.addEventListener('click', () => {
+            const word = gameWordInput.value.trim(); // Get the input value and remove leading/trailing whitespace
+
+            if (word) {
+                // Construct the sentence using the user's word
+                generatedSentence.textContent = `Give me a recipe for ${word}`;
+                resultContainer.classList.remove('hidden'); // Show the result container
+            } else {
+                // If the input is empty, hide the result and optionally show a message
+                generatedSentence.textContent = 'Please enter a word to generate the prompt.';
+                resultContainer.classList.remove('hidden'); // Still show to display the error message
+                resultContainer.classList.add('bg-red-50', 'border-red-200', 'text-red-800'); // Style for error
+                resultContainer.classList.remove('bg-blue-50', 'border-blue-200', 'text-blue-800'); // Remove normal style
+            }
+        });
+
+        // Optional: Allow pressing Enter key to trigger the generation
+        gameWordInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                generateButton.click(); // Simulate a button click
+            }
+        });
+    </script>
+</body>
+</html>
