@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Type Effectiveness Chart</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for better readability and mobile responsiveness */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text */
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #2d3748; /* Slightly lighter dark background for container */
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            color: #a0aec0; /* Lighter gray for heading */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .type-cell {
+            padding: 8px 4px; /* Reduced padding for smaller cells */
+            border: 1px solid #4a5568; /* Darker border */
+            text-align: center;
+            font-size: 0.75rem; /* Smaller font size for cells */
+            white-space: nowrap; /* Prevent type names from wrapping */
+            border-radius: 4px; /* Slightly rounded corners for cells */
+        }
+        .type-header {
+            padding: 8px 4px;
+            border: 1px solid #4a5568;
+            font-weight: bold;
+            background-color: #4a5568; /* Darker header background */
+            position: sticky;
+            top: 0; /* Stick headers to the top */
+            z-index: 10;
+            border-radius: 4px;
+        }
+        .type-header.vertical {
+            writing-mode: vertical-lr; /* Rotate text for vertical headers */
+            transform: rotate(180deg); /* Rotate to read bottom-up */
+            text-orientation: mixed;
+            height: 120px; /* Adjust height for vertical text */
+            padding: 4px;
+            font-size: 0.7rem;
+        }
+
+        /* Effectiveness colors */
+        .bg-2x { background-color: #48bb78; /* Green for Super Effective */ }
+        .bg-05x { background-color: #ef4444; /* Red for Not Very Effective */ }
+        .bg-0x { background-color: #6b7280; /* Gray for No Effect */ }
+        .bg-1x { background-color: #3b82f6; /* Blue for Normal Effect */ }
+        .bg-selected-row { background-color: #6366f1; /* Purple for selected row */ }
+        .bg-selected-header { background-color: #8b5cf6; /* Darker purple for selected header */ }
+
+        /* Responsive adjustments */
+        @media (min-width: 640px) { /* sm breakpoint */
+            .type-cell, .type-header {
+                font-size: 0.875rem; /* Base font size */
+                padding: 10px 6px;
+            }
+            .type-header.vertical {
+                height: 150px;
+                font-size: 0.8rem;
+            }
+        }
+        @media (min-width: 768px) { /* md breakpoint */
+            .type-cell, .type-header {
+                font-size: 1rem; /* Larger font size */
+                padding: 12px 8px;
+            }
+            .type-header.vertical {
+                height: 180px;
+                font-size: 0.9rem;
+            }
+        }
+        @media (min-width: 1024px) { /* lg breakpoint */
+            .type-cell, .type-header {
+                padding: 14px 10px;
+            }
+            .type-header.vertical {
+                height: 200px;
+                font-size: 1rem;
+            }
+        }
+
+        /* Table container for horizontal scrolling on small screens */
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            padding-bottom: 10px; /* Space for scrollbar */
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="container">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-center mb-6">
+            Pokémon Type Effectiveness Chart
+        </h1>
+
+        <div class="mb-6 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <label for="attackingType" class="text-lg font-medium text-gray-300">
+                Select Attacking Type:
+            </label>
+            <div class="relative w-full sm:w-auto">
+                <select id="attackingType"
+                        class="block appearance-none w-full bg-gray-700 border border-gray-600 text-white py-3 px-4 pr-8 rounded-lg shadow leading-tight focus:outline-none focus:bg-gray-600 focus:border-purple-500 transition duration-300 ease-in-out cursor-pointer">
+                    <!-- Options will be populated by JavaScript -->
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table id="typeChartTable" class="table-auto w-full border-collapse rounded-lg overflow-hidden">
+                <thead>
+                    <tr id="tableHeaderRow">
+                        <th class="type-header bg-transparent !border-0"></th> <!-- Empty corner cell -->
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Table content will be generated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-8 p-4 bg-gray-700 rounded-lg shadow-inner">
+            <h2 class="text-xl font-semibold mb-4 text-gray-200">Legend:</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm md:text-base">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-2x"></span>
+                    <span class="font-medium">2x Damage (Super Effective)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-05x"></span>
+                    <span class="font-medium">0.5x Damage (Not Very Effective)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-0x"></span>
+                    <span class="font-medium">0x Damage (No Effect)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-1x"></span>
+                    <span class="font-medium">1x Damage (Normal Effect)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Define the Pokémon type effectiveness chart (Generation 6 onwards)
+        // Key: Attacking Type, Value: Object of Defending Type -> Effectiveness Multiplier
+        const typeChart = {
+            "Normal": { "Rock": 0.5, "Ghost": 0, "Steel": 0.5 },
+            "Fire": { "Fire": 0.5, "Water": 0.5, "Grass": 2, "Ice": 2, "Bug": 2, "Rock": 0.5, "Dragon": 0.5, "Steel": 2 },
+            "Water": { "Fire": 2, "Water": 0.5, "Grass": 0.5, "Ground": 2, "Rock": 2, "Dragon": 0.5 },
+            "Grass": { "Fire": 0.5, "Water": 2, "Grass": 0.5, "Poison": 0.5, "Ground": 2, "Flying": 0.5, "Bug": 0.5, "Rock": 2, "Dragon": 0.5, "Steel": 0.5 },
+            "Electric": { "Water": 2, "Grass": 0.5, "Electric": 0.5, "Ground": 0, "Flying": 2, "Dragon": 0.5 },
+            "Ice": { "Fire": 0.5, "Water": 0.5, "Grass": 2, "Ice": 0.5, "Ground": 2, "Flying": 2, "Dragon": 2, "Steel": 0.5 },
+            "Fighting": { "Normal": 2, "Ice": 2, "Poison": 0.5, "Flying": 0.5, "Psychic": 0.5, "Bug": 0.5, "Rock": 2, "Ghost": 0, "Dragon": 0.5, "Steel": 2, "Fairy": 0.5 },
+            "Poison": { "Grass": 2, "Poison": 0.5, "Ground": 0.5, "Rock": 0.5, "Ghost": 0.5, "Steel": 0, "Fairy": 2 },
+            "Ground": { "Fire": 2, "Electric": 2, "Grass": 0.5, "Ice": 0.5, "Poison": 2, "Flying": 0, "Bug": 0.5, "Rock": 2, "Steel": 2 },
+            "Flying": { "Grass": 2, "Electric": 0.5, "Fighting": 2, "Bug": 2, "Rock": 0.5, "Steel": 0.5 },
+            "Psychic": { "Fighting": 2, "Poison": 2, "Psychic": 0.5, "Steel": 0.5, "Dark": 0, "Fairy": 0.5 },
+            "Bug": { "Fire": 0.5, "Grass": 2, "Fighting": 0.5, "Poison": 0.5, "Flying": 0.5, "Psychic": 2, "Ghost": 0.5, "Steel": 0.5, "Fairy": 0.5 },
+            "Rock": { "Fire": 2, "Ice": 2, "Fighting": 0.5, "Ground": 0.5, "Flying": 2, "Bug": 2, "Steel": 0.5 },
+            "Ghost": { "Normal": 0, "Fighting": 0, "Poison": 2, "Bug": 2, "Ghost": 2, "Dark": 0.5 },
+            "Dragon": { "Dragon": 2, "Steel": 0.5, "Fairy": 0 },
+            "Steel": { "Fire": 0.5, "Water": 0.5, "Electric": 0.5, "Ice": 2, "Rock": 2, "Steel": 0.5, "Fairy": 2 },
+            "Dark": { "Fighting": 0.5, "Psychic": 2, "Ghost": 2, "Fairy": 0.5, "Dark": 0.5 },
+            "Fairy": { "Fighting": 2, "Poison": 0.5, "Steel": 0.5, "Fire": 0.5, "Dragon": 2, "Dark": 2 }
+        };
+
+        // Get all unique types for headers and dropdown
+        const types = Object.keys(typeChart).sort(); // Sort alphabetically for consistency
+
+        const attackingTypeSelect = document.getElementById('attackingType');
+        const tableHeaderRow = document.getElementById('tableHeaderRow');
+        const tableBody = document.getElementById('tableBody');
+
+        /**
+         * Get the Tailwind CSS class for a given effectiveness multiplier.
+         * @param {number} effectiveness - The damage multiplier (0, 0.5, 1, 2).
+         * @returns {string} The corresponding Tailwind CSS class.
+         */
+        function getEffectivenessClass(effectiveness) {
+            if (effectiveness === 2) return 'bg-2x';
+            if (effectiveness === 0.5) return 'bg-05x';
+            if (effectiveness === 0) return 'bg-0x';
+            return 'bg-1x'; // Default for 1x
+        }
+
+        /**
+         * Populates the attacking type dropdown.
+         */
+        function populateAttackingTypeDropdown() {
+            types.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                attackingTypeSelect.appendChild(option);
+            });
+        }
+
+        /**
+         * Generates the main type effectiveness table.
+         */
+        function generateChart() {
+            // Clear existing table content
+            tableHeaderRow.innerHTML = '<th class="type-header bg-transparent !border-0"></th>'; // Keep empty corner cell
+            tableBody.innerHTML = '';
+
+            // Create defending type headers (top row)
+            types.forEach(defendingType => {
+                const th = document.createElement('th');
+                th.textContent = defendingType;
+                th.classList.add('type-header', 'type-header-defending');
+                tableHeaderRow.appendChild(th);
+            });
+
+            // Create table rows for each attacking type
+            types.forEach(attackingType => {
+                const tr = document.createElement('tr');
+                tr.id = `row-${attackingType}`; // Assign an ID for easy selection
+
+                // Attacking type header (first column)
+                const th = document.createElement('th');
+                th.textContent = attackingType;
+                th.classList.add('type-header', 'type-header-attacking');
+                tr.appendChild(th);
+
+                // Populate cells for each defending type
+                types.forEach(defendingType => {
+                    const td = document.createElement('td');
+                    td.classList.add('type-cell');
+
+                    // Get effectiveness, default to 1 if not specified
+                    const effectiveness = typeChart[attackingType]?.[defendingType] || 1;
+                    td.textContent = `${effectiveness}x`; // Display multiplier
+
+                    td.classList.add(getEffectivenessClass(effectiveness)); // Apply color based on effectiveness
+                    tr.appendChild(td);
+                });
+                tableBody.appendChild(tr);
+            });
+        }
+
+        /**
+         * Highlights the row for the currently selected attacking type.
+         * @param {string} selectedType - The type currently selected in the dropdown.
+         */
+        function updateChartHighlight(selectedType) {
+            // Remove previous highlights
+            document.querySelectorAll('.bg-selected-row').forEach(el => {
+                el.classList.remove('bg-selected-row');
+            });
+            document.querySelectorAll('.bg-selected-header').forEach(el => {
+                el.classList.remove('bg-selected-header');
+            });
+
+            // Highlight the selected row
+            const selectedRow = document.getElementById(`row-${selectedType}`);
+            if (selectedRow) {
+                selectedRow.classList.add('bg-selected-row');
+                // Highlight the attacking type header in the first column
+                selectedRow.querySelector('.type-header-attacking').classList.add('bg-selected-header');
+            }
+
+            // Highlight the corresponding defending type header in the top row
+            const defendingHeaders = document.querySelectorAll('.type-header-defending');
+            defendingHeaders.forEach(header => {
+                if (header.textContent === selectedType) {
+                    header.classList.add('bg-selected-header');
+                }
+            });
+        }
+
+        // Initialize on window load
+        window.onload = function() {
+            populateAttackingTypeDropdown();
+            generateChart();
+
+            // Set initial highlight based on the first type in the dropdown
+            if (types.length > 0) {
+                attackingTypeSelect.value = types[0];
+                updateChartHighlight(types[0]);
+            }
+
+            // Add event listener for dropdown changes
+            attackingTypeSelect.addEventListener('change', (event) => {
+                updateChartHighlight(event.target.value);
+            });
+        };
+    </script>
+</body>
+</html>

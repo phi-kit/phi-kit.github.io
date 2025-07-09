@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outer Wilds Solar System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font for a consistent look */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark background for space theme */
+            color: #e2e8f0; /* Light text for contrast */
+        }
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2d3748;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div class="container mx-auto max-w-6xl">
+        <header class="text-center mb-12">
+            <h1 class="text-5xl sm:text-6xl font-extrabold text-blue-300 drop-shadow-lg mb-4">
+                The Outer Wilds Solar System
+            </h1>
+            <p class="text-xl sm:text-2xl text-gray-400">
+                Explore the mysteries of the Timber Hearth system.
+            </p>
+        </header>
+
+        <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Planet Card: Timber Hearth -->
+            <div class="bg-gray-800 rounded-xl shadow-lg overflow-hidden transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl">
+                <img src="https://placehold.co/600x350/2f855a/ffffff?text=Timber+Hearth" alt="Timber Hearth" class="w-full h-48 object-cover rounded-t-xl">
+                <div class="p-6">
+                    <h2 class="text-3xl font-semibold text-green-300 mb-2">Timber Hearth</h2>
+                    <p class="text-gray-300 text-lg leading-relaxed">
+                        The lush home planet of the Hearthians, filled with forests, geysers, and ancient ruins. It's where your journey begins.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Planet Card: Brittle Hollow -->
+            <div class="bg-gray-800 rounded-xl shadow-lg overflow-hidden transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl">
+                <img src="https://placehold.co/600x350/4a5568/ffffff?text=Brittle+Hollow" alt="Brittle Hollow" class="w-full h-48 object-cover rounded-t-xl">
+                <div class="p-6">
+                    <h2 class="text-3xl font-semibold text-purple-300 mb-2">Brittle Hollow</h2>
+                    <p class="text-gray-300 text-lg leading-relaxed">
+                        A fragile planet constantly shedding its crust into a black hole at its core. Exploration here requires careful timing.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Planet Card: Hollow's Lantern -->
+            <div class="bg-gray-800 rounded-xl shadow-lg overflow-hidden transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl">
+                <img src="https://placehold.co/600x350/dd6b20/ffffff?text=Hollow's+Lantern" alt="Hollow's Lantern" class="w-full h-48 object-cover rounded-t-xl">
+                <div class="p-6">
+                    <h2 class="text-3xl font-semibold text-orange-300 mb-2">Hollow's Lantern</h2>
+                    <p class="text-gray-300 text-lg leading-relaxed">
+                        The volcanic moon orbiting Brittle Hollow, actively erupting and contributing to its parent planet's disintegration.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Planet Card: Giant's Deep -->
+            <div class="bg-gray-800 rounded-xl shadow-lg overflow-hidden transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl">
+                <img src="https://placehold.co/600x350/3182ce/ffffff?text=Giant's+Deep" alt="Giant's Deep" class="w-full h-48 object-cover rounded-t-xl">
+                <div class="p-6">
+                    <h2 class="text-3xl font-semibold text-blue-300 mb-2">Giant's Deep</h2>
+                    <p class="text-gray-300 text-lg leading-relaxed">
+                        A vast ocean planet shrouded in clouds, home to powerful cyclones and submerged islands. Watch out for the anglerfish!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Planet Card: Ash Twin -->
+            <div class="bg-gray-800 rounded-xl shadow-lg overflow-hidden transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl">
+                <img src="https://placehold.co/600x350/718096/ffffff?text=Ash+Twin" alt="Ash Twin" class="w-full h-48 object-cover rounded-t-xl">
+                <div class="p-6">
+                    <h2 class="text-3xl font-semibold text-gray-300 mb-2">Ash Twin</h2>
+                    <p class="text-gray-300 text-lg leading-relaxed">
+                        A desert planet constantly being stripped of its sand by its twin, Ember Twin, revealing hidden structures.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Planet Card: Dark Bramble -->
+            <div class="bg-gray-800 rounded-xl shadow-lg overflow-hidden transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl">
+                <img src="https://placehold.co/600x350/2c5282/ffffff?text=Dark+Bramble" alt="Dark Bramble" class="w-full h-48 object-cover rounded-t-xl">
+                <div class="p-6">
+                    <h2 class="text-3xl font-semibold text-indigo-300 mb-2">Dark Bramble</h2>
+                    <p class="text-gray-300 text-lg leading-relaxed">
+                        A mysterious, thorny planet filled with dense fog and terrifying predators. Navigation here is a true test of courage.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Planet Card: The Sun Station -->
+            <div class="bg-gray-800 rounded-xl shadow-lg overflow-hidden transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl">
+                <img src="https://placehold.co/600x350/e53e3e/ffffff?text=The+Sun+Station" alt="The Sun Station" class="w-full h-48 object-cover rounded-t-xl">
+                <div class="p-6">
+                    <h2 class="text-3xl font-semibold text-red-300 mb-2">The Sun Station</h2>
+                    <p class="text-gray-300 text-lg leading-relaxed">
+                        An ancient Nomai construct orbiting the sun, shrouded in mystery and vital to understanding the time loop.
+                    </p>
+                </div>
+            </div>
+        </main>
+
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>&copy; 2025 Outer Wilds Fan Page. All rights reserved. Game by Mobius Digital.</p>
+        </footer>
+    </div>
+</body>
+</html>

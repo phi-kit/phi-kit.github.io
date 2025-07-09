@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Flapper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117; /* Dark space background */
+            color: #e6e6e6; /* Light text color */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Prevent scrolling */
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #161b22; /* Slightly lighter background for the container */
+            border-radius: 1rem; /* Rounded corners */
+            box-shadow: 0 0 2rem rgba(0, 255, 255, 0.3); /* Cyan glow */
+            padding: 1.5rem;
+            max-width: 90vw; /* Responsive width */
+            width: 600px; /* Max width for desktop */
+            position: relative;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #00ffff; /* Cyan title */
+            margin-bottom: 1rem;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+        }
+
+        canvas {
+            background-color: #0a0c10; /* Even darker for the game area */
+            border: 2px solid #00ffff; /* Cyan border */
+            border-radius: 0.75rem; /* Rounded corners for canvas */
+            display: block;
+            touch-action: manipulation; /* Improve touch responsiveness */
+            width: 100%; /* Make canvas responsive */
+            max-width: 500px; /* Max width for canvas */
+            height: 400px; /* Fixed height for game aspect ratio */
+        }
+
+        .game-info {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 1.5rem 2rem;
+            border-radius: 1rem;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+            z-index: 10;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .game-info.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .game-info h2 {
+            font-size: 2rem;
+            color: #00ffff;
+            margin-bottom: 1rem;
+        }
+
+        .game-info p {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .score-display {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ffe600; /* Gold score color */
+            margin-top: 1rem;
+            text-shadow: 0 0 8px rgba(255, 230, 0, 0.7);
+        }
+
+        .button {
+            background: linear-gradient(145deg, #00bfff, #007bff); /* Blue gradient */
+            color: white;
+            padding: 0.8rem 1.8rem;
+            border: none;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 700;
+            box-shadow: 0 5px 15px rgba(0, 191, 255, 0.4);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 1rem;
+        }
+
+        .button:hover {
+            background: linear-gradient(145deg, #007bff, #00bfff);
+            box-shadow: 0 8px 20px rgba(0, 191, 255, 0.6);
+            transform: translateY(-3px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 10px rgba(0, 191, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Space Flapper</h1>
+        <canvas id="gameCanvas"></canvas>
+        <div id="gameInfo" class="game-info">
+            <h2 id="infoTitle">Welcome to Space Flapper!</h2>
+            <p id="infoMessage">Help your spaceship navigate through the treacherous asteroid field. Click or press Spacebar to flap your wings and avoid collisions!</p>
+            <button id="startButton" class="button">Start Game</button>
+        </div>
+        <div id="scoreDisplay" class="score-display">Score: 0</div>
+    </div>
+
+    <script>
+        // Get canvas and its context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Get UI elements
+        const gameInfo = document.getElementById('gameInfo');
+        const infoTitle = document.getElementById('infoTitle');
+        const infoMessage = document.getElementById('infoMessage');
+        const startButton = document.getElementById('startButton');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+
+        // Game constants
+        const CANVAS_WIDTH = 500; // Reference width for calculations
+        const CANVAS_HEIGHT = 400; // Reference height for calculations
+        const SPACESHIP_SIZE = 30;
+        const ASTEROID_WIDTH = 50;
+        const ASTEROID_MIN_GAP = 120; // Minimum vertical gap between top and bottom asteroids
+        const ASTEROID_HORIZONTAL_GAP = 200; // Horizontal distance between asteroid pairs
+        const GRAVITY = 0.5;
+        const JUMP_VELOCITY = -8;
+        const ASTEROID_SPEED = 3; // Speed at which asteroids move towards the spaceship
+
+        // Game variables
+        let spaceshipX, spaceshipY;
+        let spaceshipVelocityY;
+        let asteroids = [];
+        let score;
+        let gameOver;
+        let gameStarted;
+        let animationFrameId; // To store the requestAnimationFrame ID
+
+        // Function to resize canvas and maintain aspect ratio
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            let newWidth = container.clientWidth;
+            let newHeight = CANVAS_HEIGHT * (newWidth / CANVAS_WIDTH);
+
+            // Ensure height doesn't exceed container height if container is constrained
+            if (newHeight > container.clientHeight && container.clientHeight > 0) {
+                newHeight = container.clientHeight;
+                newWidth = CANVAS_WIDTH * (newHeight / CANVAS_HEIGHT);
+            }
+
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+        }
+
+        // Draw the spaceship (a simple triangle for now)
+        function drawSpaceship() {
+            ctx.fillStyle = '#00ffff'; // Cyan color for spaceship
+            ctx.beginPath();
+            ctx.moveTo(spaceshipX, spaceshipY - SPACESHIP_SIZE / 2); // Top point
+            ctx.lineTo(spaceshipX - SPACESHIP_SIZE / 2, spaceshipY + SPACESHIP_SIZE / 2); // Bottom-left point
+            ctx.lineTo(spaceshipX + SPACESHIP_SIZE / 2, spaceshipY + SPACESHIP_SIZE / 2); // Bottom-right point
+            ctx.closePath();
+            ctx.fill();
+
+            // Add a small glow effect
+            ctx.shadowColor = '#00ffff';
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = '#00ffff';
+            ctx.fill();
+            ctx.shadowBlur = 0; // Reset shadow
+        }
+
+        // Draw an asteroid (simple rectangle for now)
+        function drawAsteroid(x, y, height) {
+            ctx.fillStyle = '#808080'; // Grey color for asteroids
+            ctx.fillRect(x, y, ASTEROID_WIDTH, height);
+
+            // Add some texture/detail (optional)
+            ctx.fillStyle = '#606060';
+            ctx.fillRect(x + ASTEROID_WIDTH * 0.1, y + ASTEROID_WIDTH * 0.1, ASTEROID_WIDTH * 0.8, height * 0.1);
+            ctx.fillRect(x + ASTEROID_WIDTH * 0.2, y + height - ASTEROID_WIDTH * 0.1, ASTEROID_WIDTH * 0.6, height * 0.1);
+
+            // Add a small border/outline
+            ctx.strokeStyle = '#a0a0a0';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, ASTEROID_WIDTH, height);
+            ctx.lineWidth = 1; // Reset line width
+        }
+
+        // Generate a new pair of asteroids
+        function generateAsteroid() {
+            const minHeight = 50;
+            const maxHeight = canvas.height - ASTEROID_MIN_GAP - minHeight;
+            const topAsteroidHeight = Math.random() * (maxHeight - minHeight) + minHeight;
+            const bottomAsteroidHeight = canvas.height - topAsteroidHeight - ASTEROID_MIN_GAP;
+
+            asteroids.push({
+                x: canvas.width,
+                topHeight: topAsteroidHeight,
+                bottomHeight: bottomAsteroidHeight,
+                passed: false // To track if the spaceship has passed this asteroid for scoring
+            });
+        }
+
+        // Update game state
+        function update() {
+            if (!gameStarted || gameOver) return;
+
+            // Update spaceship position
+            spaceshipVelocityY += GRAVITY;
+            spaceshipY += spaceshipVelocityY;
+
+            // Check for collision with top/bottom boundaries
+            if (spaceshipY + SPACESHIP_SIZE / 2 > canvas.height || spaceshipY - SPACESHIP_SIZE / 2 < 0) {
+                endGame();
+                return;
+            }
+
+            // Update asteroid positions and generate new ones
+            if (asteroids.length === 0 || asteroids[asteroids.length - 1].x < canvas.width - ASTEROID_HORIZONTAL_GAP) {
+                generateAsteroid();
+            }
+
+            for (let i = 0; i < asteroids.length; i++) {
+                const asteroid = asteroids[i];
+                asteroid.x -= ASTEROID_SPEED;
+
+                // Check for collision with asteroids
+                // Spaceship bounding box: (spaceshipX - SPACESHIP_SIZE/2, spaceshipY - SPACESHIP_SIZE/2, SPACESHIP_SIZE, SPACESHIP_SIZE)
+                // Top asteroid bounding box: (asteroid.x, 0, ASTEROID_WIDTH, asteroid.topHeight)
+                // Bottom asteroid bounding box: (asteroid.x, canvas.height - asteroid.bottomHeight, ASTEROID_WIDTH, asteroid.bottomHeight)
+
+                const spaceshipLeft = spaceshipX - SPACESHIP_SIZE / 2;
+                const spaceshipRight = spaceshipX + SPACESHIP_SIZE / 2;
+                const spaceshipTop = spaceshipY - SPACESHIP_SIZE / 2;
+                const spaceshipBottom = spaceshipY + SPACESHIP_SIZE / 2;
+
+                const asteroidLeft = asteroid.x;
+                const asteroidRight = asteroid.x + ASTEROID_WIDTH;
+
+                // Collision with top asteroid
+                if (spaceshipRight > asteroidLeft && spaceshipLeft < asteroidRight &&
+                    spaceshipTop < asteroid.topHeight) {
+                    endGame();
+                    return;
+                }
+
+                // Collision with bottom asteroid
+                if (spaceshipRight > asteroidLeft && spaceshipLeft < asteroidRight &&
+                    spaceshipBottom > (canvas.height - asteroid.bottomHeight)) {
+                    endGame();
+                    return;
+                }
+
+                // Score update
+                if (asteroid.x + ASTEROID_WIDTH < spaceshipX && !asteroid.passed) {
+                    score++;
+                    asteroid.passed = true;
+                    scoreDisplay.textContent = `Score: ${score}`;
+                }
+            }
+
+            // Remove off-screen asteroids
+            asteroids = asteroids.filter(asteroid => asteroid.x + ASTEROID_WIDTH > 0);
+        }
+
+        // Draw all game elements
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+
+            drawSpaceship();
+
+            asteroids.forEach(asteroid => {
+                drawAsteroid(asteroid.x, 0, asteroid.topHeight); // Top asteroid
+                drawAsteroid(asteroid.x, canvas.height - asteroid.bottomHeight, asteroid.bottomHeight); // Bottom asteroid
+            });
+        }
+
+        // Game loop
+        function gameLoop() {
+            update();
+            draw();
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // Handle spaceship jump
+        function flap() {
+            if (!gameOver) {
+                spaceshipVelocityY = JUMP_VELOCITY;
+            }
+        }
+
+        // Start the game
+        function startGame() {
+            resetGame();
+            gameStarted = true;
+            gameInfo.classList.add('hidden'); // Hide info screen
+            scoreDisplay.textContent = `Score: ${score}`;
+            gameLoop();
+        }
+
+        // End the game
+        function endGame() {
+            gameOver = true;
+            gameStarted = false;
+            cancelAnimationFrame(animationFrameId); // Stop the game loop
+            infoTitle.textContent = 'Game Over!';
+            infoMessage.innerHTML = `You crashed! Your score was: <span style="color:#ffe600; font-weight:bold;">${score}</span>.<br>Press "Restart" to try again!`;
+            startButton.textContent = 'Restart Game';
+            gameInfo.classList.remove('hidden'); // Show game over screen
+        }
+
+        // Reset game state
+        function resetGame() {
+            spaceshipX = canvas.width / 4;
+            spaceshipY = canvas.height / 2;
+            spaceshipVelocityY = 0;
+            asteroids = [];
+            score = 0;
+            gameOver = false;
+            gameStarted = false;
+            scoreDisplay.textContent = `Score: 0`;
+        }
+
+        // Event listeners
+        window.onload = function() {
+            resizeCanvas(); // Initial canvas resize
+            resetGame(); // Set initial game state
+            // Display initial game info
+            infoTitle.textContent = 'Welcome to Space Flapper!';
+            infoMessage.innerHTML = 'Help your spaceship navigate through the treacherous asteroid field. Click or press Spacebar to flap your wings and avoid collisions!';
+            startButton.textContent = 'Start Game';
+            gameInfo.classList.remove('hidden'); // Ensure info screen is visible initially
+
+            // Add event listeners after initial setup
+            startButton.addEventListener('click', startGame);
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' && !gameOver && gameStarted) {
+                    flap();
+                    e.preventDefault(); // Prevent scrolling with spacebar
+                } else if (e.code === 'Space' && !gameStarted && !gameOver) {
+                    startGame(); // Start game on spacebar press if not started
+                    e.preventDefault();
+                } else if (e.code === 'Space' && gameOver) {
+                    startGame(); // Restart game on spacebar press if game over
+                    e.preventDefault();
+                }
+            });
+            canvas.addEventListener('click', () => {
+                if (!gameOver && gameStarted) {
+                    flap();
+                } else if (!gameStarted && !gameOver) {
+                    startGame();
+                } else if (gameOver) {
+                    startGame();
+                }
+            });
+            canvas.addEventListener('touchstart', (e) => {
+                if (!gameOver && gameStarted) {
+                    flap();
+                } else if (!gameStarted && !gameOver) {
+                    startGame();
+                } else if (gameOver) {
+                    startGame();
+                }
+                e.preventDefault(); // Prevent default touch behavior like scrolling
+            }, { passive: false });
+
+            window.addEventListener('resize', resizeCanvas); // Resize canvas on window resize
+        };
+    </script>
+</body>
+</html>
