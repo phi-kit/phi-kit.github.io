@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Fall</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(to bottom, #87CEEB, #1E90FF); /* Sky blue to deeper blue */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+            position: relative;
+        }
+
+        .game-container {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            width: 90%;
+            max-width: 500px;
+            box-sizing: border-box;
+        }
+
+        canvas {
+            background-color: #000; /* Dark background for the falling area */
+            display: block;
+            border-radius: 10px;
+            border: 2px solid #fff;
+            touch-action: none; /* Disable default touch actions like scrolling */
+            width: 100%; /* Make canvas responsive */
+            max-width: 400px; /* Max width for larger screens */
+            height: 400px; /* Fixed height for now, can be adjusted with JS if needed */
+            margin-bottom: 20px;
+        }
+
+        .score-display {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+        }
+
+        .game-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .game-button {
+            background: linear-gradient(145deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-button:hover {
+            background: linear-gradient(145deg, #45a049, #3d8c41);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .game-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .game-button.restart {
+            background: linear-gradient(145deg, #f44336, #d32f2f);
+        }
+
+        .game-button.restart:hover {
+            background: linear-gradient(145deg, #d32f2f, #c62828);
+        }
+
+        .game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 2em;
+            font-weight: bold;
+            z-index: 10;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .game-over-screen.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .game-over-screen p {
+            margin: 10px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+        }
+
+        .game-over-screen .final-score {
+            font-size: 1.5em;
+            color: #FFD700; /* Gold color */
+        }
+
+        .instructions {
+            margin-top: 20px;
+            font-size: 0.9em;
+            text-align: center;
+            line-height: 1.5;
+            max-width: 450px;
+            padding: 0 10px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .instructions i {
+            margin-right: 5px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 15px;
+                width: 95%;
+            }
+            canvas {
+                height: 350px;
+            }
+            .score-display {
+                font-size: 1.5em;
+            }
+            .game-button {
+                padding: 10px 20px;
+                font-size: 1em;
+            }
+            .game-over-screen {
+                font-size: 1.5em;
+            }
+            .game-over-screen .final-score {
+                font-size: 1.2em;
+            }
+            .instructions {
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="score-display">Score: <span id="score">0</span></div>
+        <canvas id="gameCanvas"></canvas>
+        <div class="game-buttons">
+            <button id="startButton" class="game-button"><i class="fas fa-play"></i> Start Game</button>
+            <button id="restartButton" class="game-button restart" style="display: none;"><i class="fas fa-redo"></i> Restart</button>
+        </div>
+
+        <div id="gameOverScreen" class="game-over-screen">
+            <p>Game Over!</p>
+            <p class="final-score">Your Score: <span id="finalScore">0</span></p>
+            <button id="playAgainButton" class="game-button restart"><i class="fas fa-redo"></i> Play Again</button>
+        </div>
+    </div>
+
+    <div class="instructions">
+        <p><i class="fas fa-keyboard"></i> Use Left/Right Arrow keys or A/D to move.</p>
+        <p><i class="fas fa-hand-point-up"></i> On mobile, tap left/right side of the screen to move.</p>
+        <p>Avoid falling obstacles to survive as long as possible!</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const playAgainButton = document.getElementById('playAgainButton');
+
+        let player;
+        let obstacles = [];
+        let score = 0;
+        let gameRunning = false;
+        let lastObstacleTime = 0;
+        const obstacleInterval = 700; // Milliseconds between new obstacles
+        const maxObstacles = 10; // Max number of obstacles on screen
+        let gameSpeed = 1; // Multiplier for obstacle speed
+        let gameSpeedIncreaseInterval = 10000; // Increase speed every 10 seconds
+        let lastSpeedIncreaseTime = 0;
+
+        // Player properties
+        const playerWidth = 30;
+        const playerHeight = 30;
+        const playerColor = '#FFD700'; // Gold
+
+        // Obstacle properties
+        const obstacleMinHeight = 20;
+        const obstacleMaxHeight = 50;
+        const obstacleMinWidth = 60;
+        const obstacleMaxWidth = 150;
+        const obstacleColor = '#FF4500'; // OrangeRed
+
+        // Game settings
+        const gravity = 0.5; // How fast player falls (not directly used for player, but for obstacles)
+        const playerSpeed = 5; // Horizontal movement speed
+
+        // Adjust canvas size to fit container
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = 400; // Keep height fixed for now or make it dynamic
+            if (canvas.width > 400) {
+                canvas.width = 400; // Cap max width
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas(); // Initial resize
+
+        // Player object
+        class Player {
+            constructor() {
+                this.width = playerWidth;
+                this.height = playerHeight;
+                this.x = (canvas.width - this.width) / 2;
+                this.y = 50; // Start near the top
+                this.dx = 0; // Horizontal velocity
+            }
+
+            draw() {
+                ctx.fillStyle = playerColor;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+
+            update() {
+                // Apply horizontal movement
+                this.x += this.dx;
+
+                // Keep player within canvas bounds
+                if (this.x < 0) {
+                    this.x = 0;
+                }
+                if (this.x + this.width > canvas.width) {
+                    this.x = canvas.width - this.width;
+                }
+            }
+        }
+
+        // Obstacle object
+        class Obstacle {
+            constructor(x, y, width, height, speed) {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.speed = speed;
+            }
+
+            draw() {
+                ctx.fillStyle = obstacleColor;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+
+            update() {
+                this.y += this.speed * gameSpeed; // Obstacles fall downwards
+            }
+        }
+
+        // Initialize game
+        function initGame() {
+            player = new Player();
+            obstacles = [];
+            score = 0;
+            scoreDisplay.textContent = score;
+            gameRunning = true;
+            lastObstacleTime = performance.now();
+            lastSpeedIncreaseTime = performance.now();
+            gameSpeed = 1;
+            gameOverScreen.classList.remove('active');
+            startButton.style.display = 'none';
+            restartButton.style.display = 'inline-block';
+            gameLoop();
+        }
+
+        // Generate new obstacle
+        function generateObstacle() {
+            const width = Math.random() * (obstacleMaxWidth - obstacleMinWidth) + obstacleMinWidth;
+            const height = Math.random() * (obstacleMaxHeight - obstacleMinHeight) + obstacleMinHeight;
+            const x = Math.random() * (canvas.width - width);
+            const y = -height; // Start above the canvas
+            const speed = 2 + Math.random() * 2; // Base speed
+            obstacles.push(new Obstacle(x, y, width, height, speed));
+        }
+
+        // Game loop
+        function gameLoop(currentTime) {
+            if (!gameRunning) return;
+
+            const deltaTime = currentTime - lastObstacleTime;
+            const speedIncreaseDelta = currentTime - lastSpeedIncreaseTime;
+
+            // Increase game speed over time
+            if (speedIncreaseDelta > gameSpeedIncreaseInterval) {
+                gameSpeed += 0.1; // Increase speed by 10%
+                lastSpeedIncreaseTime = currentTime;
+                // console.log('Game speed increased to:', gameSpeed.toFixed(2));
+            }
+
+            // Generate new obstacles
+            if (deltaTime > obstacleInterval && obstacles.length < maxObstacles) {
+                generateObstacle();
+                lastObstacleTime = currentTime;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+
+            player.update();
+            player.draw();
+
+            for (let i = 0; i < obstacles.length; i++) {
+                const obs = obstacles[i];
+                obs.update();
+                obs.draw();
+
+                // Collision detection (Player vs Obstacle)
+                if (
+                    player.x < obs.x + obs.width &&
+                    player.x + player.width > obs.x &&
+                    player.y < obs.y + obs.height &&
+                    player.y + player.height > obs.y
+                ) {
+                    endGame();
+                    return;
+                }
+
+                // Remove obstacles that are off-screen and increase score
+                if (obs.y > canvas.height) {
+                    obstacles.splice(i, 1);
+                    i--; // Adjust index after removal
+                    score += 10; // Score for avoiding an obstacle
+                    scoreDisplay.textContent = score;
+                }
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // End game function
+        function endGame() {
+            gameRunning = false;
+            finalScoreDisplay.textContent = score;
+            gameOverScreen.classList.add('active');
+            restartButton.style.display = 'none';
+            startButton.style.display = 'none';
+        }
+
+        // Event Listeners for player movement
+        document.addEventListener('keydown', (e) => {
+            if (!gameRunning) return;
+            if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
+                player.dx = -playerSpeed;
+            } else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
+                player.dx = playerSpeed;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (!gameRunning) return;
+            if (
+                e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a' ||
+                e.key === 'ArrowRight' || e.key.toLowerCase() === 'd'
+            ) {
+                player.dx = 0;
+            }
+        });
+
+        // Touch controls for mobile
+        canvas.addEventListener('touchstart', (e) => {
+            if (!gameRunning) return;
+            const touchX = e.touches[0].clientX;
+            const canvasRect = canvas.getBoundingClientRect();
+            if (touchX < canvasRect.left + canvasRect.width / 2) {
+                player.dx = -playerSpeed; // Move left
+            } else {
+                player.dx = playerSpeed; // Move right
+            }
+        });
+
+        canvas.addEventListener('touchend', () => {
+            if (!gameRunning) return;
+            player.dx = 0; // Stop movement
+        });
+
+        // Button Event Listeners
+        startButton.addEventListener('click', initGame);
+        restartButton.addEventListener('click', initGame);
+        playAgainButton.addEventListener('click', initGame);
+
+        // Initial setup for buttons
+        startButton.style.display = 'inline-block';
+        restartButton.style.display = 'none';
+    </script>
+</body>
+</html>

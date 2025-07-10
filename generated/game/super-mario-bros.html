@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Mario Bros. (Basic)</title>
+    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #87CEEB; /* Sky blue background */
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+            font-family: "Inter", sans-serif;
+        }
+        canvas {
+            background-color: #A0D2EB; /* Lighter sky blue for the game area */
+            border: 4px solid #4A2C2A; /* Brown border for game feel */
+            border-radius: 12px; /* Rounded corners for the canvas */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); /* Soft shadow */
+            display: block; /* Remove extra space below canvas */
+            width: 90vw; /* Responsive width */
+            max-width: 800px; /* Max width for desktop */
+            height: auto; /* Maintain aspect ratio */
+        }
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 3px 3px 0px #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .instructions {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 15px 25px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 1rem;
+            color: #333;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="title">Super Mario Bros. (Basic)</h1>
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div class="instructions">
+            <p>Use <strong>Left Arrow</strong> and <strong>Right Arrow</strong> to move.</p>
+            <p>Press <strong>Spacebar</strong> or <strong>Up Arrow</strong> to jump.</p>
+        </div>
+    </div>
+
+    <script>
+        // Get the canvas element and its 2D rendering context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Game Constants ---
+        const GRAVITY = 0.5; // Strength of gravity
+        const JUMP_STRENGTH = -10; // How high Mario jumps (negative for upward movement)
+        const PLAYER_SPEED = 5; // Horizontal movement speed
+
+        // --- Player Object ---
+        const player = {
+            x: 50, // Initial X position
+            y: canvas.height - 50, // Initial Y position (on the ground)
+            width: 32, // Player width
+            height: 32, // Player height
+            dx: 0, // Horizontal velocity
+            dy: 0, // Vertical velocity
+            isJumping: false, // Flag to check if player is currently jumping
+            onGround: false // Flag to check if player is on the ground
+        };
+
+        // --- Platforms/Ground ---
+        // Define an array of platforms. Each platform has x, y, width, height.
+        // The first platform is the main ground.
+        const platforms = [
+            { x: 0, y: canvas.height - 30, width: canvas.width, height: 30, color: '#4A2C2A' }, // Main ground
+            { x: 150, y: canvas.height - 100, width: 100, height: 20, color: '#8B4513' }, // Small platform 1
+            { x: 300, y: canvas.height - 150, width: 120, height: 20, color: '#8B4513' }, // Small platform 2
+            { x: 500, y: canvas.height - 100, width: 80, height: 20, color: '#8B4513' }  // Small platform 3
+        ];
+
+        // --- Input Handling ---
+        const keys = {
+            ArrowLeft: false,
+            ArrowRight: false,
+            ArrowUp: false,
+            Space: false
+        };
+
+        // Event listener for keydown (when a key is pressed)
+        document.addEventListener('keydown', (e) => {
+            if (keys.hasOwnProperty(e.code)) {
+                keys[e.code] = true;
+                // Prevent default behavior for arrow keys and spacebar to avoid scrolling
+                if (e.code === 'ArrowUp' || e.code === 'Space') {
+                    e.preventDefault();
+                }
+            }
+        });
+
+        // Event listener for keyup (when a key is released)
+        document.addEventListener('keyup', (e) => {
+            if (keys.hasOwnProperty(e.code)) {
+                keys[e.code] = false;
+            }
+        });
+
+        // --- Game Functions ---
+
+        /**
+         * Draws the player character on the canvas.
+         */
+        function drawPlayer() {
+            ctx.fillStyle = 'red'; // Mario's color
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            // Optional: Add a simple cap for Mario
+            ctx.fillStyle = 'darkred';
+            ctx.fillRect(player.x, player.y - 5, player.width, 5);
+        }
+
+        /**
+         * Draws all platforms on the canvas.
+         */
+        function drawPlatforms() {
+            platforms.forEach(platform => {
+                ctx.fillStyle = platform.color;
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+            });
+        }
+
+        /**
+         * Updates the player's position and applies physics.
+         */
+        function update() {
+            // Reset onGround flag at the start of each update
+            player.onGround = false;
+
+            // Apply horizontal movement based on input
+            player.dx = 0; // Reset horizontal velocity
+            if (keys.ArrowLeft) {
+                player.dx = -PLAYER_SPEED;
+            }
+            if (keys.ArrowRight) {
+                player.dx = PLAYER_SPEED;
+            }
+
+            // Apply gravity
+            player.dy += GRAVITY;
+
+            // Update player position based on velocities
+            player.x += player.dx;
+            player.y += player.dy;
+
+            // Keep player within canvas horizontal bounds
+            if (player.x < 0) {
+                player.x = 0;
+            } else if (player.x + player.width > canvas.width) {
+                player.x = canvas.width - player.width;
+            }
+
+            // Collision detection with platforms
+            platforms.forEach(platform => {
+                // AABB collision detection
+                if (player.x < platform.x + platform.width &&
+                    player.x + player.width > platform.x &&
+                    player.y < platform.y + platform.height &&
+                    player.y + player.height > platform.y) {
+
+                    // Collision detected! Determine which side.
+
+                    // If falling and landed on top of platform
+                    if (player.dy > 0 && player.y + player.height - player.dy <= platform.y) {
+                        player.y = platform.y - player.height; // Snap to top of platform
+                        player.dy = 0; // Stop vertical movement
+                        player.isJumping = false; // Player is no longer jumping
+                        player.onGround = true; // Player is on the ground
+                    }
+                    // If hitting platform from bottom (e.g., jumping into a block)
+                    else if (player.dy < 0 && player.y - player.dy >= platform.y + platform.height) {
+                        player.y = platform.y + platform.height; // Snap to bottom of platform
+                        player.dy = 0; // Reverse vertical velocity (bounce off)
+                    }
+                    // If hitting from left or right (horizontal collision)
+                    else if (player.dx > 0 && player.x + player.width - player.dx <= platform.x) {
+                        player.x = platform.x - player.width; // Snap to left of platform
+                        player.dx = 0;
+                    }
+                    else if (player.dx < 0 && player.x - player.dx >= platform.x + platform.width) {
+                        player.x = platform.x + platform.width; // Snap to right of platform
+                        player.dx = 0;
+                    }
+                }
+            });
+
+            // Allow jumping only if on ground and jump key is pressed
+            if ((keys.ArrowUp || keys.Space) && player.onGround && !player.isJumping) {
+                player.dy = JUMP_STRENGTH; // Apply jump force
+                player.isJumping = true; // Set jumping flag
+            }
+
+            // Prevent player from falling through the bottom of the canvas if no platform is below
+            if (player.y + player.height > canvas.height) {
+                player.y = canvas.height - player.height; // Snap to bottom
+                player.dy = 0; // Stop vertical movement
+                player.isJumping = false;
+                player.onGround = true;
+            }
+        }
+
+        /**
+         * The main game loop. Clears the canvas, updates game state, and redraws.
+         * @param {DOMHighResTimeStamp} timestamp - The current time provided by requestAnimationFrame.
+         */
+        function gameLoop(timestamp) {
+            // Clear the entire canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update game state
+            update();
+
+            // Draw game elements
+            drawPlatforms();
+            drawPlayer();
+
+            // Request the next frame
+            window.requestAnimationFrame(gameLoop);
+        }
+
+        // Start the game loop when the window loads
+        window.onload = function () {
+            // Adjust canvas size for responsiveness
+            const adjustCanvasSize = () => {
+                const containerWidth = canvas.parentElement.clientWidth;
+                const newWidth = Math.min(containerWidth * 0.9, 800); // 90% of container, max 800px
+                canvas.width = newWidth;
+                canvas.height = newWidth / 2; // Maintain 2:1 aspect ratio
+                // Re-position player if necessary after resize (simple approach for now)
+                player.y = canvas.height - 30 - player.height; // Ensure player is on the ground
+                // Re-position platforms (simple approach, ideally recalculate based on new canvas size)
+                platforms[0].width = canvas.width;
+                platforms[0].y = canvas.height - 30; // Ground platform adjusts
+            };
+
+            window.addEventListener('resize', adjustCanvasSize);
+            adjustCanvasSize(); // Initial adjustment
+
+            gameLoop();
+        };
+    </script>
+</body>
+</html>

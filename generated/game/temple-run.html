@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temple Run</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #222;
+            color: #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            background-color: #555; /* Darker background for the game world */
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            max-width: 90%; /* Responsive width */
+            max-height: 90%; /* Responsive height */
+        }
+        #ui-overlay {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 20px;
+            box-sizing: border-box;
+            pointer-events: none; /* Allow clicks to pass through to canvas */
+        }
+        #score, #high-score {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 8px 15px;
+            border-radius: 8px;
+        }
+        #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease;
+            border-radius: 10px;
+        }
+        #game-over-screen.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        #game-over-screen h2 {
+            font-size: 3em;
+            color: #ff4500;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.9);
+        }
+        #final-score {
+            font-size: 2.5em;
+            color: #fff;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+        }
+        #restart-button {
+            padding: 15px 30px;
+            font-size: 1.5em;
+            font-weight: bold;
+            background: linear-gradient(145deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            pointer-events: all; /* Make button clickable */
+        }
+        #restart-button:hover {
+            background: linear-gradient(145deg, #45a049, #3e8e41);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+        #restart-button:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Mobile controls */
+        #mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            z-index: 10;
+            pointer-events: none; /* Allow clicks to pass through to canvas */
+        }
+        .mobile-button {
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 15px 25px;
+            font-size: 1.8em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            user-select: none;
+            touch-action: manipulation;
+            pointer-events: all; /* Make button clickable */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        .mobile-button:active {
+            background-color: rgba(0, 0, 0, 0.8);
+            transform: translateY(2px);
+        }
+        /* Hide mobile controls on larger screens */
+        @media (min-width: 768px) {
+            #mobile-controls {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="ui-overlay">
+            <div id="score">Score: 0</div>
+            <div id="high-score">High Score: 0</div>
+        </div>
+        <div id="game-over-screen">
+            <h2>Game Over!</h2>
+            <div id="final-score">Final Score: 0</div>
+            <button id="restart-button">Restart Game</button>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="mobile-controls">
+            <button class="mobile-button" id="left-button">←</button>
+            <button class="mobile-button" id="jump-button">↑</button>
+            <button class="mobile-button" id="right-button">→</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // --- Global Variables ---
+        let scene, camera, renderer;
+        let player;
+        let obstacles = [];
+        let coins = [];
+        let pathSegments = [];
+        let gameStarted = false;
+        let gameOver = false;
+        let score = 0;
+        let highScore = localStorage.getItem('templeRunHighScore') || 0;
+        let playerSpeed = 0.2; // Initial player speed
+        const laneWidth = 1.5; // Distance between lanes
+        const playerLane = { current: 0, target: 0 }; // -1: left, 0: center, 1: right
+        const jumpHeight = 1.5;
+        const jumpDuration = 0.5; // seconds
+        let isJumping = false;
+        let jumpStartTime = 0;
+        const obstacleSpawnDistance = 50;
+        const coinSpawnDistance = 30;
+        let lastObstacleZ = 0;
+        let lastCoinZ = 0;
+        const segmentLength = 10; // Length of each path segment
+        const numSegments = 10; // Number of path segments to keep
+        const segmentGenerationThreshold = -50; // Generate new segment when camera passes this Z
+        let lastSegmentZ = 0;
+
+        // UI Elements
+        const scoreDisplay = document.getElementById('score');
+        const highScoreDisplay = document.getElementById('high-score');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const restartButton = document.getElementById('restart-button');
+
+        // Mobile Controls
+        const leftButton = document.getElementById('left-button');
+        const jumpButton = document.getElementById('jump-button');
+        const rightButton = document.getElementById('right-button');
+
+        // --- Initialization ---
+        function init() {
+            // Set up scene, camera, renderer
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true, canvas: document.getElementById('gameCanvas') });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x87CEEB); // Sky blue background
+            renderer.shadowMap.enabled = true; // Enable shadows
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Soft shadows
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0x404040); // Soft white light
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 10, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 1024;
+            directionalLight.shadow.mapSize.height = 1024;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 50;
+            directionalLight.shadow.camera.left = -10;
+            directionalLight.shadow.camera.right = 10;
+            directionalLight.shadow.camera.top = 10;
+            directionalLight.shadow.camera.bottom = -10;
+            scene.add(directionalLight);
+
+            // Player (simple cube for now)
+            const playerGeometry = new THREE.BoxGeometry(0.8, 1.5, 0.8);
+            const playerMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
+            player = new THREE.Mesh(playerGeometry, playerMaterial);
+            player.position.set(0, 0.75, 0); // Position player on the ground
+            player.castShadow = true;
+            scene.add(player);
+
+            // Camera position relative to player
+            camera.position.set(0, 3, 5); // Behind and slightly above the player
+            camera.lookAt(player.position);
+
+            // Initial path segments
+            for (let i = 0; i < numSegments; i++) {
+                addPathSegment(i * segmentLength);
+            }
+
+            // Initial obstacles and coins
+            spawnInitialObjects();
+
+            // Update high score display
+            highScoreDisplay.textContent = `High Score: ${highScore}`;
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize, false);
+            document.addEventListener('keydown', onKeyDown, false);
+            restartButton.addEventListener('click', restartGame, false);
+
+            // Mobile controls
+            leftButton.addEventListener('touchstart', (e) => { e.preventDefault(); movePlayer(-1); });
+            rightButton.addEventListener('touchstart', (e) => { e.preventDefault(); movePlayer(1); });
+            jumpButton.addEventListener('touchstart', (e) => { e.preventDefault(); jumpPlayer(); });
+            leftButton.addEventListener('mousedown', () => movePlayer(-1));
+            rightButton.addEventListener('mousedown', () => movePlayer(1));
+            jumpButton.addEventListener('mousedown', jumpPlayer);
+
+            // Start game on first interaction
+            document.addEventListener('click', startGameOnce, { once: true });
+            document.addEventListener('keydown', startGameOnce, { once: true });
+            leftButton.addEventListener('touchstart', startGameOnce, { once: true });
+            rightButton.addEventListener('touchstart', startGameOnce, { once: true });
+            jumpButton.addEventListener('touchstart', startGameOnce, { once: true });
+        }
+
+        function startGameOnce() {
+            if (!gameStarted) {
+                gameStarted = true;
+                animate(); // Start the game loop
+            }
+        }
+
+        // --- Game Logic ---
+        function addPathSegment(zPos) {
+            const geometry = new THREE.PlaneGeometry(laneWidth * 3 + 0.5, segmentLength); // Wider path for 3 lanes
+            const material = new THREE.MeshLambertMaterial({ color: 0x8B4513, side: THREE.DoubleSide }); // Brown for path
+            const path = new THREE.Mesh(geometry, material);
+            path.rotation.x = -Math.PI / 2; // Rotate to be flat on the ground
+            path.position.set(0, 0, -zPos); // Position along Z-axis
+            path.receiveShadow = true; // Path receives shadows
+            scene.add(path);
+            pathSegments.push(path);
+            lastSegmentZ = -zPos; // Update last generated segment Z position
+        }
+
+        function spawnInitialObjects() {
+            // Spawn some initial obstacles and coins
+            for (let i = 1; i < numSegments; i++) {
+                if (Math.random() < 0.5) { // 50% chance to spawn an obstacle
+                    spawnObstacle(i * segmentLength);
+                }
+                if (Math.random() < 0.7) { // 70% chance to spawn coins
+                    spawnCoins(i * segmentLength);
+                }
+            }
+        }
+
+        function spawnObstacle(zPos) {
+            const obstacleType = Math.floor(Math.random() * 2); // 0 for wall, 1 for low barrier
+            let obstacle;
+            let lane = Math.floor(Math.random() * 3) - 1; // -1, 0, 1 for left, center, right
+
+            if (obstacleType === 0) { // Wall
+                const geometry = new THREE.BoxGeometry(laneWidth, 2, 0.5);
+                const material = new THREE.MeshLambertMaterial({ color: 0x8B0000 }); // Red-brown for wall
+                obstacle = new THREE.Mesh(geometry, material);
+                obstacle.position.set(lane * laneWidth, 1, -zPos);
+            } else { // Low barrier (slide under)
+                const geometry = new THREE.BoxGeometry(laneWidth, 0.5, 0.5);
+                const material = new THREE.MeshLambertMaterial({ color: 0x4B0082 }); // Indigo for barrier
+                obstacle = new THREE.Mesh(geometry, material);
+                obstacle.position.set(lane * laneWidth, 0.25, -zPos);
+            }
+            obstacle.castShadow = true;
+            scene.add(obstacle);
+            obstacles.push(obstacle);
+            lastObstacleZ = -zPos;
+        }
+
+        function spawnCoins(zPos) {
+            const numCoins = Math.floor(Math.random() * 3) + 1; // 1 to 3 coins
+            const lane = Math.floor(Math.random() * 3) - 1; // -1, 0, 1
+
+            for (let i = 0; i < numCoins; i++) {
+                const geometry = new THREE.CylinderGeometry(0.3, 0.3, 0.1, 32);
+                const material = new THREE.MeshBasicMaterial({ color: 0xFFA500 }); // Gold color
+                const coin = new THREE.Mesh(geometry, material);
+                coin.rotation.x = Math.PI / 2; // Make it flat
+                coin.position.set(lane * laneWidth, 0.5, -zPos - i * 1); // Stack them slightly
+                scene.add(coin);
+                coins.push(coin);
+            }
+            lastCoinZ = -zPos;
+        }
+
+        function updateGame(deltaTime) {
+            if (gameOver || !gameStarted) return;
+
+            // Move player forward
+            player.position.z -= playerSpeed * deltaTime * 60; // Adjust speed based on deltaTime
+
+            // Move camera with player
+            camera.position.z = player.position.z + 5;
+
+            // Player lane movement
+            player.position.x += (playerLane.target * laneWidth - player.position.x) * 0.1;
+
+            // Jump animation
+            if (isJumping) {
+                const elapsed = (Date.now() - jumpStartTime) / 1000;
+                if (elapsed < jumpDuration) {
+                    // Parabolic jump arc
+                    const t = elapsed / jumpDuration;
+                    const y = jumpHeight * 4 * t * (1 - t); // Parabolic function
+                    player.position.y = 0.75 + y;
+                } else {
+                    isJumping = false;
+                    player.position.y = 0.75; // Reset to ground level
+                }
+            }
+
+            // Generate new path segments
+            if (player.position.z < lastSegmentZ + segmentGenerationThreshold) {
+                addPathSegment(lastSegmentZ - segmentLength); // Add new segment further down
+                // Remove old segments
+                if (pathSegments.length > numSegments) {
+                    const oldSegment = pathSegments.shift();
+                    scene.remove(oldSegment);
+                    oldSegment.geometry.dispose();
+                    oldSegment.material.dispose();
+                }
+            }
+
+            // Generate new obstacles and coins as player progresses
+            if (player.position.z < lastObstacleZ + obstacleSpawnDistance) {
+                if (Math.random() < 0.6) { // 60% chance to spawn an obstacle
+                    spawnObstacle(lastObstacleZ - (segmentLength / 2) - (Math.random() * 5)); // Randomize position slightly
+                }
+            }
+            if (player.position.z < lastCoinZ + coinSpawnDistance) {
+                if (Math.random() < 0.8) { // 80% chance to spawn coins
+                    spawnCoins(lastCoinZ - (segmentLength / 2) - (Math.random() * 5));
+                }
+            }
+
+            // Update and remove off-screen obstacles
+            obstacles = obstacles.filter(obstacle => {
+                if (obstacle.position.z > player.position.z + 10) { // If obstacle is behind player and off-screen
+                    scene.remove(obstacle);
+                    obstacle.geometry.dispose();
+                    obstacle.material.dispose();
+                    return false;
+                }
+                return true;
+            });
+
+            // Update and remove off-screen coins
+            coins = coins.filter(coin => {
+                if (coin.position.z > player.position.z + 10) { // If coin is behind player and off-screen
+                    scene.remove(coin);
+                    coin.geometry.dispose();
+                    coin.material.dispose();
+                    return false;
+                }
+                return true;
+            });
+
+            // Collision detection
+            checkCollisions();
+
+            // Update score
+            score += playerSpeed * deltaTime; // Score increases with distance
+            scoreDisplay.textContent = `Score: ${Math.floor(score)}`;
+        }
+
+        function checkCollisions() {
+            const playerBox = new THREE.Box3().setFromObject(player);
+
+            // Obstacle collision
+            for (let i = 0; i < obstacles.length; i++) {
+                const obstacle = obstacles[i];
+                const obstacleBox = new THREE.Box3().setFromObject(obstacle);
+
+                if (playerBox.intersectsBox(obstacleBox)) {
+                    // Check if player jumped over a wall obstacle
+                    const isWall = obstacle.geometry.parameters.height > 1; // Assuming wall height > 1
+                    const isBarrier = obstacle.geometry.parameters.height <= 1; // Assuming barrier height <= 1
+
+                    if (isWall && isJumping && player.position.y > obstacle.position.y + obstacle.geometry.parameters.height / 2) {
+                        // Player jumped over the wall, no collision
+                        continue;
+                    }
+
+                    if (isBarrier && !isJumping && player.position.y < obstacle.position.y + obstacle.geometry.parameters.height / 2) {
+                        // Player slid under the barrier, no collision (for now, simple slide)
+                        // This would require a "slide" state for the player
+                        continue;
+                    }
+
+                    // If it's a collision, end game
+                    endGame();
+                    return;
+                }
+            }
+
+            // Coin collection
+            for (let i = coins.length - 1; i >= 0; i--) {
+                const coin = coins[i];
+                const coinBox = new THREE.Box3().setFromObject(coin);
+
+                if (playerBox.intersectsBox(coinBox)) {
+                    scene.remove(coin);
+                    coin.geometry.dispose();
+                    coin.material.dispose();
+                    coins.splice(i, 1); // Remove collected coin
+                    score += 100; // Increase score for collecting coin
+                    scoreDisplay.textContent = `Score: ${Math.floor(score)}`;
+                }
+            }
+        }
+
+        function endGame() {
+            gameOver = true;
+            gameStarted = false; // Stop game loop
+            finalScoreDisplay.textContent = `Final Score: ${Math.floor(score)}`;
+            if (score > highScore) {
+                highScore = Math.floor(score);
+                localStorage.setItem('templeRunHighScore', highScore);
+                highScoreDisplay.textContent = `High Score: ${highScore}`;
+            }
+            gameOverScreen.classList.add('active');
+        }
+
+        function restartGame() {
+            // Reset game state
+            gameOver = false;
+            score = 0;
+            playerSpeed = 0.2;
+            player.position.set(0, 0.75, 0);
+            playerLane.current = 0;
+            playerLane.target = 0;
+            isJumping = false;
+            player.position.y = 0.75;
+
+            // Clear all existing obstacles, coins, and path segments
+            obstacles.forEach(obj => { scene.remove(obj); obj.geometry.dispose(); obj.material.dispose(); });
+            obstacles = [];
+            coins.forEach(obj => { scene.remove(obj); obj.geometry.dispose(); obj.material.dispose(); });
+            coins = [];
+            pathSegments.forEach(obj => { scene.remove(obj); obj.geometry.dispose(); obj.material.dispose(); });
+            pathSegments = [];
+
+            // Re-initialize path, obstacles, and coins
+            lastObstacleZ = 0;
+            lastCoinZ = 0;
+            lastSegmentZ = 0;
+            for (let i = 0; i < numSegments; i++) {
+                addPathSegment(i * segmentLength);
+            }
+            spawnInitialObjects();
+
+            scoreDisplay.textContent = `Score: 0`;
+            gameOverScreen.classList.remove('active');
+            gameStarted = true; // Automatically start game after restart
+            animate(); // Restart animation loop
+        }
+
+        function movePlayer(direction) { // -1 for left, 1 for right
+            if (gameOver) return;
+            playerLane.target += direction;
+            playerLane.target = Math.max(-1, Math.min(1, playerLane.target)); // Clamp between -1 and 1
+        }
+
+        function jumpPlayer() {
+            if (gameOver || isJumping) return;
+            isJumping = true;
+            jumpStartTime = Date.now();
+        }
+
+        // --- Event Handlers ---
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onKeyDown(event) {
+            if (gameOver) return;
+            switch (event.key) {
+                case 'ArrowLeft':
+                    movePlayer(-1);
+                    break;
+                case 'ArrowRight':
+                    movePlayer(1);
+                    break;
+                case 'ArrowUp':
+                case ' ': // Spacebar for jump
+                    jumpPlayer();
+                    break;
+            }
+        }
+
+        // --- Animation Loop ---
+        let lastTime = 0;
+        function animate(currentTime) {
+            if (gameOver) return;
+
+            const deltaTime = (currentTime - lastTime) / 1000 || 0; // Convert to seconds
+            lastTime = currentTime;
+
+            updateGame(deltaTime);
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        // Initialize the game when the window loads
+        window.onload = init;
+
+    </script>
+</body>
+</html>
