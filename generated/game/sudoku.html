@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Game</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for Sudoku grid */
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px; /* Add some padding for smaller screens */
+            box-sizing: border-box;
+        }
+
+        #sudoku-container {
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 100%; /* Ensure it doesn't overflow on small screens */
+        }
+
+        #sudoku-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            grid-template-rows: repeat(9, 1fr);
+            width: clamp(280px, 90vw, 500px); /* Responsive width */
+            height: clamp(280px, 90vw, 500px); /* Keep aspect ratio */
+            border: 3px solid #334155; /* Slate-800 for main border */
+            border-radius: 0.5rem;
+            overflow: hidden; /* Ensures rounded corners apply to the grid */
+        }
+
+        .sudoku-cell {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: clamp(1.2rem, 4vw, 2rem); /* Responsive font size */
+            font-weight: bold;
+            border: 1px solid #cbd5e1; /* Slate-300 for cell borders */
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+            background-color: #f8fafc; /* Light background for cells */
+        }
+
+        .sudoku-cell input {
+            width: 90%;
+            height: 90%;
+            text-align: center;
+            font-size: inherit;
+            font-weight: inherit;
+            border: none;
+            outline: none;
+            background-color: transparent;
+            color: #1e293b; /* Dark text for user input */
+        }
+
+        .sudoku-cell.fixed-cell {
+            background-color: #e2e8f0; /* Slate-200 for fixed cells */
+            color: #1a202c; /* Darker text for fixed numbers */
+        }
+
+        /* Thicker borders for 3x3 blocks */
+        .sudoku-cell:nth-child(3n) {
+            border-right-width: 3px;
+            border-right-color: #64748b; /* Slate-500 */
+        }
+        .sudoku-cell:nth-child(9n) {
+            border-right-width: 1px; /* Reset for the last column */
+        }
+
+        .sudoku-cell:nth-child(n + 19):nth-child(-n + 27),
+        .sudoku-cell:nth-child(n + 46):nth-child(-n + 54) {
+            border-bottom-width: 3px;
+            border-bottom-color: #64748b; /* Slate-500 */
+        }
+        /* Reset for the last row's thicker border */
+        .sudoku-cell:nth-child(n + 73):nth-child(-n + 81) {
+            border-bottom-width: 1px;
+        }
+
+        /* Specific border adjustments for the last cell in a row/column of a 3x3 block */
+        .sudoku-cell:nth-child(3n + 1) {
+            border-left-width: 1px; /* Ensure consistent left border */
+        }
+        .sudoku-cell:nth-child(n + 1):nth-child(-n + 9) {
+            border-top-width: 1px; /* Ensure consistent top border */
+        }
+
+        /* Highlight selected cell */
+        .sudoku-cell.selected {
+            background-color: #bfdbfe; /* Blue-200 */
+        }
+
+        /* Highlight cells with the same value as selected */
+        .sudoku-cell.highlight-value {
+            background-color: #dbeafe; /* Blue-100 */
+        }
+
+        /* Highlight cells in the same row/column/box as selected */
+        .sudoku-cell.highlight-area {
+            background-color: #eff6ff; /* Blue-50 */
+        }
+
+        /* Error state for invalid input */
+        .sudoku-cell.error input {
+            color: #ef4444; /* Red-500 */
+        }
+
+        /* Button styling */
+        .btn {
+            @apply px-6 py-3 m-2 rounded-lg font-semibold text-white transition-all duration-300 ease-in-out shadow-lg;
+        }
+
+        .btn-primary {
+            @apply bg-blue-600 hover:bg-blue-700 active:bg-blue-800;
+        }
+
+        .btn-secondary {
+            @apply bg-gray-600 hover:bg-gray-700 active:bg-gray-800;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Message box styling */
+        #message-box {
+            @apply mt-4 p-3 rounded-lg text-center text-sm font-medium;
+            min-height: 40px; /* Ensure consistent height */
+        }
+        .message-success {
+            @apply bg-green-100 text-green-700;
+        }
+        .message-error {
+            @apply bg-red-100 text-red-700;
+        }
+        .message-info {
+            @apply bg-blue-100 text-blue-700;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div id="sudoku-container" class="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full flex flex-col items-center">
+        <h1 class="text-4xl font-extrabold text-gray-800 mb-6 tracking-tight">Sudoku</h1>
+
+        <div id="sudoku-grid" class="mb-6">
+            <!-- Sudoku cells will be generated here by JavaScript -->
+        </div>
+
+        <div id="controls" class="flex flex-wrap justify-center gap-4 mt-4">
+            <button id="new-game-btn" class="btn btn-primary">New Game</button>
+            <button id="solve-btn" class="btn btn-secondary">Solve</button>
+            <button id="clear-btn" class="btn btn-secondary">Clear</button>
+        </div>
+
+        <div id="message-box" class="w-full mt-6">
+            <!-- Messages will appear here -->
+        </div>
+    </div>
+
+    <script>
+        // Global variables for the game state
+        let board = []; // Current state of the board
+        let initialBoard = []; // The initial puzzle, used to reset fixed cells
+        let selectedCell = null; // Stores the currently selected cell element
+
+        // Pre-defined Sudoku puzzles (can be expanded)
+        // 0 represents an empty cell
+        const puzzles = [
+            [
+                [5, 3, 0, 0, 7, 0, 0, 0, 0],
+                [6, 0, 0, 1, 9, 5, 0, 0, 0],
+                [0, 9, 8, 0, 0, 0, 0, 6, 0],
+                [8, 0, 0, 0, 6, 0, 0, 0, 3],
+                [4, 0, 0, 8, 0, 3, 0, 0, 1],
+                [7, 0, 0, 0, 2, 0, 0, 0, 6],
+                [0, 6, 0, 0, 0, 0, 2, 8, 0],
+                [0, 0, 0, 4, 1, 9, 0, 0, 5],
+                [0, 0, 0, 0, 8, 0, 0, 7, 9]
+            ],
+            [
+                [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0]
+            ] // An empty board for testing or manual input
+        ];
+
+        const sudokuGrid = document.getElementById('sudoku-grid');
+        const newGameBtn = document.getElementById('new-game-btn');
+        const solveBtn = document.getElementById('solve-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const messageBox = document.getElementById('message-box');
+
+        /**
+         * Displays a message in the message box.
+         * @param {string} message - The message to display.
+         * @param {string} type - The type of message ('success', 'error', 'info').
+         */
+        function showMessage(message, type) {
+            messageBox.textContent = message;
+            messageBox.className = `w-full mt-6 ${type === 'success' ? 'message-success' : type === 'error' ? 'message-error' : 'message-info'}`;
+        }
+
+        /**
+         * Clears any message currently displayed in the message box.
+         */
+        function clearMessage() {
+            messageBox.textContent = '';
+            messageBox.className = 'w-full mt-6'; // Reset classes
+        }
+
+        /**
+         * Initializes the Sudoku grid by creating 81 input cells.
+         */
+        function createGrid() {
+            sudokuGrid.innerHTML = ''; // Clear existing grid
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('sudoku-cell');
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.maxLength = 1;
+                    input.pattern = '[1-9]'; // Only allow digits 1-9
+                    input.addEventListener('input', handleCellInput);
+                    input.addEventListener('focus', handleCellFocus);
+                    input.addEventListener('blur', handleCellBlur); // Handle blur to remove highlights
+                    cell.appendChild(input);
+                    sudokuGrid.appendChild(cell);
+                }
+            }
+        }
+
+        /**
+         * Populates the grid with a new puzzle.
+         * @param {Array<Array<number>>} puzzle - The Sudoku puzzle to load.
+         */
+        function loadPuzzle(puzzle) {
+            board = JSON.parse(JSON.stringify(puzzle)); // Deep copy the puzzle to current board
+            initialBoard = JSON.parse(JSON.stringify(puzzle)); // Keep a copy of the initial state
+            clearMessage();
+            removeHighlights(); // Ensure no highlights from previous game
+
+            const cells = sudokuGrid.children;
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    const cellIndex = r * 9 + c;
+                    const cell = cells[cellIndex];
+                    const input = cell.querySelector('input');
+
+                    // Reset classes
+                    cell.classList.remove('fixed-cell', 'error', 'selected', 'highlight-area', 'highlight-value');
+                    input.readOnly = false;
+                    input.value = '';
+
+                    if (puzzle[r][c] !== 0) {
+                        input.value = puzzle[r][c];
+                        input.readOnly = true; // Fixed numbers cannot be changed
+                        cell.classList.add('fixed-cell');
+                    }
+                }
+            }
+        }
+
+        /**
+         * Handles input events on Sudoku cells.
+         * Validates input and updates the board state.
+         * @param {Event} event - The input event.
+         */
+        function handleCellInput(event) {
+            const input = event.target;
+            const cell = input.closest('.sudoku-cell');
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            const value = input.value.trim();
+
+            // Clear previous error state
+            cell.classList.remove('error');
+            clearMessage();
+
+            if (value === '') {
+                board[row][col] = 0; // Empty cell
+                input.value = ''; // Ensure input is truly empty
+                updateHighlights(row, col, 0); // Update highlights based on empty cell
+                return;
+            }
+
+            // Only allow single digit numbers 1-9
+            if (!/^[1-9]$/.test(value)) {
+                input.value = ''; // Clear invalid input
+                board[row][col] = 0;
+                showMessage('Please enter a digit from 1 to 9.', 'error');
+                updateHighlights(row, col, 0); // Update highlights based on empty cell
+                return;
+            }
+
+            const num = parseInt(value);
+            board[row][col] = num;
+
+            // Check if the current placement is valid
+            if (!isValid(board, row, col, num)) {
+                cell.classList.add('error');
+                showMessage(`Number ${num} is already present in this row, column, or 3x3 block.`, 'error');
+            } else {
+                // If valid, clear any previous error message related to this cell
+                clearMessage();
+            }
+            updateHighlights(row, col, num); // Update highlights based on new value
+        }
+
+        /**
+         * Handles focus event on a Sudoku cell.
+         * Adds 'selected' class and highlights related cells.
+         * @param {Event} event - The focus event.
+         */
+        function handleCellFocus(event) {
+            const cell = event.target.closest('.sudoku-cell');
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            const value = board[row][col]; // Get the current value from the board state
+
+            // Remove highlights from previously selected cell
+            removeHighlights();
+
+            // Add 'selected' class to the focused cell
+            cell.classList.add('selected');
+            selectedCell = cell;
+
+            // Apply new highlights
+            updateHighlights(row, col, value);
+        }
+
+        /**
+         * Handles blur event on a Sudoku cell.
+         * Removes 'selected' class and all highlights.
+         * @param {Event} event - The blur event.
+         */
+        function handleCellBlur(event) {
+            // Remove all highlights when a cell loses focus
+            removeHighlights();
+            selectedCell = null;
+        }
+
+        /**
+         * Removes all highlight classes from all cells.
+         */
+        function removeHighlights() {
+            const cells = sudokuGrid.children;
+            for (let i = 0; i < cells.length; i++) {
+                cells[i].classList.remove('selected', 'highlight-area', 'highlight-value');
+            }
+        }
+
+        /**
+         * Applies highlights to cells based on the selected cell's row, column, box, and value.
+         * @param {number} selectedRow - The row of the selected cell.
+         * @param {number} selectedCol - The column of the selected cell.
+         * @param {number} selectedValue - The value in the selected cell (0 if empty).
+         */
+        function updateHighlights(selectedRow, selectedCol, selectedValue) {
+            removeHighlights(); // Start with a clean slate
+
+            const cells = sudokuGrid.children;
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    const cellIndex = r * 9 + c;
+                    const cell = cells[cellIndex];
+
+                    // Highlight selected cell
+                    if (r === selectedRow && c === selectedCol) {
+                        cell.classList.add('selected');
+                    }
+
+                    // Highlight cells in the same row, column, or 3x3 box
+                    if (r === selectedRow || c === selectedCol ||
+                        (Math.floor(r / 3) === Math.floor(selectedRow / 3) &&
+                         Math.floor(c / 3) === Math.floor(selectedCol / 3))) {
+                        if (!(r === selectedRow && c === selectedCol)) { // Don't re-add 'selected'
+                            cell.classList.add('highlight-area');
+                        }
+                    }
+
+                    // Highlight cells with the same value (if not 0)
+                    if (selectedValue !== 0 && board[r][c] === selectedValue) {
+                        if (!(r === selectedRow && c === selectedCol)) { // Don't re-add 'selected'
+                            cell.classList.add('highlight-value');
+                        }
+                    }
+                }
+            }
+        }
+
+        /**
+         * Checks if placing a number at a given position is valid according to Sudoku rules.
+         * @param {Array<Array<number>>} currentBoard - The current state of the board.
+         * @param {number} row - The row index.
+         * @param {number} col - The column index.
+         * @param {number} num - The number to check.
+         * @returns {boolean} True if valid, false otherwise.
+         */
+        function isValid(currentBoard, row, col, num) {
+            // Check row
+            for (let x = 0; x < 9; x++) {
+                if (x !== col && currentBoard[row][x] === num) {
+                    return false;
+                }
+            }
+
+            // Check column
+            for (let x = 0; x < 9; x++) {
+                if (x !== row && currentBoard[x][col] === num) {
+                    return false;
+                }
+            }
+
+            // Check 3x3 box
+            const startRow = row - (row % 3);
+            const startCol = col - (col % 3);
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if ((startRow + i !== row || startCol + j !== col) && currentBoard[startRow + i][startCol + j] === num) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        /**
+         * Finds an empty cell (value 0) on the board.
+         * @param {Array<Array<number>>} currentBoard - The current state of the board.
+         * @returns {Array<number>|null} [row, col] of the empty cell, or null if no empty cells.
+         */
+        function findEmpty(currentBoard) {
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    if (currentBoard[r][c] === 0) {
+                        return [r, c];
+                    }
+                }
+            }
+            return null;
+        }
+
+        /**
+         * Solves the Sudoku puzzle using a backtracking algorithm.
+         * @param {Array<Array<number>>} currentBoard - The board to solve.
+         * @returns {boolean} True if a solution is found, false otherwise.
+         */
+        function solveSudoku(currentBoard) {
+            const find = findEmpty(currentBoard);
+            if (!find) {
+                return true; // No empty cells, puzzle solved
+            }
+
+            const [row, col] = find;
+
+            for (let num = 1; num <= 9; num++) {
+                if (isValid(currentBoard, row, col, num)) {
+                    currentBoard[row][col] = num;
+
+                    if (solveSudoku(currentBoard)) {
+                        return true;
+                    }
+
+                    currentBoard[row][col] = 0; // Backtrack
+                }
+            }
+            return false;
+        }
+
+        /**
+         * Updates the UI grid with the current board state.
+         * Used after solving or clearing.
+         */
+        function updateGridUI() {
+            const cells = sudokuGrid.children;
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    const cellIndex = r * 9 + c;
+                    const cell = cells[cellIndex];
+                    const input = cell.querySelector('input');
+
+                    input.value = board[r][c] === 0 ? '' : board[r][c];
+                    // Remove error class if any
+                    cell.classList.remove('error');
+                }
+            }
+            clearMessage();
+            removeHighlights();
+        }
+
+        /**
+         * Event listener for the "New Game" button.
+         * Loads a new random puzzle.
+         */
+        newGameBtn.addEventListener('click', () => {
+            const randomIndex = Math.floor(Math.random() * puzzles.length);
+            loadPuzzle(puzzles[randomIndex]);
+            showMessage('New game started!', 'info');
+        });
+
+        /**
+         * Event listener for the "Solve" button.
+         * Solves the current puzzle and updates the UI.
+         */
+        solveBtn.addEventListener('click', () => {
+            // Create a deep copy of the current board to solve,
+            // so we don't modify the user's current input directly until solved.
+            let boardToSolve = JSON.parse(JSON.stringify(board));
+
+            // First, validate the user's current input before attempting to solve.
+            // If any user-entered number makes the puzzle immediately invalid,
+            // we should notify them.
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    if (initialBoard[r][c] === 0 && boardToSolve[r][c] !== 0) { // Only check user-entered cells
+                        if (!isValid(boardToSolve, r, c, boardToSolve[r][c])) {
+                            showMessage('Your current entries contain an invalid number. Please correct it before solving.', 'error');
+                            // Highlight the specific error cell
+                            const cell = sudokuGrid.children[r * 9 + c];
+                            cell.classList.add('error');
+                            return; // Stop solving if there's an immediate conflict
+                        }
+                    }
+                }
+            }
+
+            if (solveSudoku(boardToSolve)) {
+                board = boardToSolve; // Update the main board with the solved state
+                updateGridUI();
+                showMessage('Puzzle solved!', 'success');
+            } else {
+                showMessage('This puzzle is unsolvable with the current entries.', 'error');
+            }
+        });
+
+        /**
+         * Event listener for the "Clear" button.
+         * Clears all user-entered numbers, keeping only the initial fixed numbers.
+         */
+        clearBtn.addEventListener('click', () => {
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    if (initialBoard[r][c] === 0) { // Only clear cells that were initially empty
+                        board[r][c] = 0;
+                    }
+                }
+            }
+            updateGridUI();
+            showMessage('User entries cleared!', 'info');
+        });
+
+        // Initialize the game when the window loads
+        window.onload = function() {
+            createGrid();
+            // Load the first puzzle by default
+            loadPuzzle(puzzles[0]);
+            showMessage('Welcome to Sudoku! Fill in the missing numbers.', 'info');
+        };
+    </script>
+</body>
+</html>

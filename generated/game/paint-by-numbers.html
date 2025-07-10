@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paint by Numbers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .game-container {
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 900px;
+            width: 100%;
+            gap: 20px;
+        }
+        canvas {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background-color: #ffffff;
+            touch-action: none; /* Prevent default touch actions like scrolling/zooming */
+        }
+        .palette-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .color-swatch {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            border: 3px solid transparent;
+            transition: transform 0.2s, border-color 0.2s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        .color-swatch:hover {
+            transform: translateY(-3px);
+        }
+        .color-swatch.selected {
+            border-color: #4CAF50; /* Green border for selected */
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .btn {
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .btn-reset {
+            background-color: #f44336; /* Red */
+            color: white;
+            border: none;
+        }
+        .btn-reset:hover {
+            background-color: #d32f2f;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+        .btn-new-pattern {
+            background-color: #2196F3; /* Blue */
+            color: white;
+            border: none;
+        }
+        .btn-new-pattern:hover {
+            background-color: #1976D2;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+        .message-box {
+            background-color: #e3f2fd; /* Light blue */
+            color: #2196F3;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 1.1em;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        .instruction-text {
+            font-size: 1.1em;
+            color: #555;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">Paint by Numbers</h1>
+        <p class="instruction-text">Select a color from the palette, then click on the matching number on the canvas to paint it!</p>
+        <canvas id="gameCanvas"></canvas>
+        <div class="palette-container" id="colorPalette">
+            <!-- Color swatches will be inserted here by JavaScript -->
+        </div>
+        <div class="controls">
+            <button id="resetBtn" class="btn btn-reset">Reset</button>
+            <button id="newPatternBtn" class="btn btn-new-pattern">New Pattern</button>
+        </div>
+        <div id="messageBox" class="message-box hidden"></div>
+    </div>
+
+    <script>
+        // Get canvas and context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const colorPaletteContainer = document.getElementById('colorPalette');
+        const resetBtn = document.getElementById('resetBtn');
+        const newPatternBtn = document.getElementById('newPatternBtn');
+        const messageBox = document.getElementById('messageBox');
+
+        // Game configuration
+        const GRID_SIZE = 15; // e.g., 15x15 grid
+        const CELL_SIZE_PX = 30; // Size of each cell in pixels (will be adjusted for responsiveness)
+        let actualCellSize; // Actual cell size based on screen width
+        let gameGrid = []; // The grid representing the pattern
+        let paintedGrid = []; // Stores the colors painted by the user
+        let activeColorIndex = -1; // Index of the currently selected color
+
+        // Define the color palette. Each object contains a color value and its corresponding number.
+        const COLORS = [
+            { value: '#FFEB3B', number: 1, text: '#333' }, // Yellow
+            { value: '#F44336', number: 2, text: '#FFF' }, // Red
+            { value: '#4CAF50', number: 3, text: '#FFF' }, // Green
+            { value: '#2196F3', number: 4, text: '#FFF' }, // Blue
+            { value: '#9C27B0', number: 5, text: '#FFF' }, // Purple
+            { value: '#FF9800', number: 6, text: '#FFF' }, // Orange
+            { value: '#795548', number: 7, text: '#FFF' }, // Brown
+            { value: '#607D8B', number: 8, text: '#FFF' }, // Slate Gray
+            { value: '#00BCD4', number: 9, text: '#FFF' }, // Cyan
+            { value: '#E91E63', number: 10, text: '#FFF' } // Pink
+        ];
+
+        // --- Utility Functions ---
+
+        /**
+         * Displays a message in the message box.
+         * @param {string} message - The message to display.
+         * @param {string} type - 'success', 'error', or 'info' for styling.
+         */
+        function showMessage(message, type = 'info') {
+            messageBox.textContent = message;
+            messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700', 'bg-blue-100', 'text-blue-700');
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'text-green-700');
+            } else if (type === 'error') {
+                messageBox.classList.add('bg-red-100', 'text-red-700');
+            } else { // info
+                messageBox.classList.add('bg-blue-100', 'text-blue-700');
+            }
+            messageBox.classList.remove('hidden');
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 3000); // Hide after 3 seconds
+        }
+
+        /**
+         * Generates a random simple pattern for the paint by numbers game.
+         * This creates a 2D array where each cell contains a number corresponding to a color index.
+         * For simplicity, it generates a random pattern, not a recognizable image.
+         * In a real game, this would load a pre-designed pattern.
+         */
+        function generatePattern() {
+            const pattern = [];
+            for (let r = 0; r < GRID_SIZE; r++) {
+                pattern[r] = [];
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    // Assign a random color index from the available COLORS
+                    pattern[r][c] = Math.floor(Math.random() * COLORS.length) + 1;
+                }
+            }
+            return pattern;
+        }
+
+        /**
+         * Initializes the game grid and painted grid.
+         */
+        function initializeGame() {
+            gameGrid = generatePattern();
+            // Initialize paintedGrid with 0s (unpainted)
+            paintedGrid = Array(GRID_SIZE).fill(0).map(() => Array(GRID_SIZE).fill(0));
+            activeColorIndex = -1; // Reset active color
+            drawGame();
+            renderColorPalette();
+            showMessage('New pattern generated! Select a color and start painting.', 'info');
+        }
+
+        /**
+         * Draws the current state of the game onto the canvas.
+         * Shows numbers for unpainted cells and actual colors for painted cells.
+         */
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const x = c * actualCellSize;
+                    const y = r * actualCellSize;
+
+                    // Draw the cell background
+                    ctx.beginPath();
+                    ctx.rect(x, y, actualCellSize, actualCellSize);
+                    ctx.strokeStyle = '#e0e0e0'; // Grid lines
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+
+                    // If the cell is painted, fill it with the painted color
+                    if (paintedGrid[r][c] !== 0) {
+                        const colorValue = COLORS.find(color => color.number === paintedGrid[r][c]).value;
+                        ctx.fillStyle = colorValue;
+                        ctx.fillRect(x, y, actualCellSize, actualCellSize);
+                    } else {
+                        // If not painted, display the number
+                        const numberToPaint = gameGrid[r][c];
+                        const colorInfo = COLORS.find(color => color.number === numberToPaint);
+
+                        ctx.fillStyle = '#f9f9f9'; // Light background for unpainted cells
+                        ctx.fillRect(x, y, actualCellSize, actualCellSize);
+
+                        ctx.fillStyle = colorInfo ? colorInfo.text : '#333'; // Text color
+                        ctx.font = `${actualCellSize * 0.4}px Inter`; // Adjust font size based on cell size
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(numberToPaint, x + actualCellSize / 2, y + actualCellSize / 2);
+                    }
+                }
+            }
+        }
+
+        /**
+         * Renders the color palette dynamically.
+         */
+        function renderColorPalette() {
+            colorPaletteContainer.innerHTML = ''; // Clear existing swatches
+            COLORS.forEach((color, index) => {
+                const swatch = document.createElement('div');
+                swatch.classList.add('color-swatch');
+                if (activeColorIndex === color.number) {
+                    swatch.classList.add('selected');
+                }
+                swatch.style.backgroundColor = color.value;
+                swatch.style.color = color.text;
+                swatch.textContent = color.number;
+                swatch.dataset.colorNumber = color.number; // Store the color number
+                swatch.addEventListener('click', () => selectColor(color.number));
+                colorPaletteContainer.appendChild(swatch);
+            });
+        }
+
+        /**
+         * Handles color selection from the palette.
+         * @param {number} colorNumber - The number of the selected color.
+         */
+        function selectColor(colorNumber) {
+            activeColorIndex = colorNumber;
+            renderColorPalette(); // Re-render to update selected state
+            showMessage(`Selected color: ${colorNumber}`, 'info');
+        }
+
+        /**
+         * Handles clicks/taps on the canvas.
+         * @param {MouseEvent|TouchEvent} event - The event object.
+         */
+        function handleCanvasClick(event) {
+            if (activeColorIndex === -1) {
+                showMessage('Please select a color first!', 'error');
+                return;
+            }
+
+            const rect = canvas.getBoundingClientRect();
+            let clientX, clientY;
+
+            if (event.touches && event.touches.length > 0) {
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            } else {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            const col = Math.floor(x / actualCellSize);
+            const row = Math.floor(y / actualCellSize);
+
+            // Check if click is within bounds
+            if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
+                const requiredColorNumber = gameGrid[row][col];
+
+                if (paintedGrid[row][col] === 0) { // Only paint if not already painted
+                    if (activeColorIndex === requiredColorNumber) {
+                        paintedGrid[row][col] = activeColorIndex;
+                        drawGame(); // Redraw the canvas
+                        checkWinCondition();
+                    } else {
+                        showMessage(`Wrong color! This cell needs color number ${requiredColorNumber}.`, 'error');
+                    }
+                } else {
+                    showMessage('This cell is already painted!', 'info');
+                }
+            }
+        }
+
+        /**
+         * Checks if the user has completed the pattern.
+         */
+        function checkWinCondition() {
+            let allPaintedCorrectly = true;
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (paintedGrid[r][c] !== gameGrid[r][c]) {
+                        allPaintedCorrectly = false;
+                        break;
+                    }
+                }
+                if (!allPaintedCorrectly) break;
+            }
+
+            if (allPaintedCorrectly) {
+                showMessage('Congratulations! You completed the picture!', 'success');
+            }
+        }
+
+        /**
+         * Resizes the canvas to fit the available space and redrows the game.
+         */
+        function resizeCanvas() {
+            const containerWidth = canvas.parentElement.clientWidth - 60; // Account for padding
+            actualCellSize = Math.floor(containerWidth / GRID_SIZE);
+            if (actualCellSize < 15) actualCellSize = 15; // Minimum cell size
+            if (actualCellSize > CELL_SIZE_PX) actualCellSize = CELL_SIZE_PX; // Max cell size
+
+            canvas.width = GRID_SIZE * actualCellSize;
+            canvas.height = GRID_SIZE * actualCellSize;
+            drawGame();
+        }
+
+        // --- Event Listeners ---
+        window.addEventListener('load', () => {
+            initializeGame();
+            resizeCanvas(); // Initial resize
+        });
+        window.addEventListener('resize', resizeCanvas);
+
+        canvas.addEventListener('click', handleCanvasClick);
+        canvas.addEventListener('touchstart', handleCanvasClick, { passive: false }); // For touch devices
+
+        resetBtn.addEventListener('click', () => {
+            // Reset paintedGrid to all 0s
+            paintedGrid = Array(GRID_SIZE).fill(0).map(() => Array(GRID_SIZE).fill(0));
+            activeColorIndex = -1; // Deselect active color
+            drawGame(); // Redraw
+            renderColorPalette(); // Re-render palette to deselect
+            showMessage('Game reset! Start over.', 'info');
+        });
+
+        newPatternBtn.addEventListener('click', initializeGame); // Generates a new pattern and resets game
+
+    </script>
+</body>
+</html>
