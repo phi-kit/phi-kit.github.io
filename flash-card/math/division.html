@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flash Cards</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Responsive grid columns */
+            gap: 16px; /* Gap between cards */
+            max-width: 960px; /* Max width for the grid */
+            width: 100%;
+            padding: 20px;
+            background-color: #ffffff; /* White background for the grid container */
+            border-radius: 16px; /* Rounded corners for the container */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); /* Soft shadow */
+        }
+
+        .card-container {
+            perspective: 1000px; /* For 3D flip effect */
+            height: 150px; /* Fixed height for cards */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d; /* Preserve 3D space for children */
+            transition: transform 0.6s; /* Smooth flip transition */
+            border-radius: 12px; /* Rounded corners for cards */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Card shadow */
+            cursor: pointer;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg); /* Flip on Y-axis */
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden; /* Hide back face when not flipped */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem; /* Larger font for content */
+            font-weight: 600;
+            color: #334155; /* Dark gray text */
+            border-radius: 12px; /* Match card border-radius */
+            padding: 10px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .card-front {
+            background-color: #6366f1; /* Indigo background for front */
+            color: #ffffff; /* White text for front */
+        }
+
+        .card-back {
+            background-color: #a78bfa; /* Violet background for back */
+            color: #ffffff; /* White text for back */
+            transform: rotateY(180deg); /* Initially rotated to be hidden */
+            font-size: 3rem; /* Larger icon size */
+        }
+
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 640px) {
+            .card-grid {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+                gap: 12px;
+                padding: 15px;
+            }
+            .card-container {
+                height: 120px;
+            }
+            .card-face {
+                font-size: 1.2rem;
+            }
+            .card-back {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="card-grid" id="cardGrid"></div>
+
+    <script>
+        const wordAnswerPairs = [];
+
+        for (let dividend = 1; dividend <= 100; dividend++) {
+            for (let divisor = 1; divisor <= dividend; divisor++) { // Divisor cannot be greater than dividend for whole number answers
+                if (dividend % divisor === 0) { // Check for whole number answer
+                    wordAnswerPairs.push({
+                        word: `${dividend} / ${divisor}`,
+                        answer: `${dividend / divisor}`
+                    });
+                }
+            }
+        }
+
+        const cardGrid = document.getElementById('cardGrid');
+
+        /**
+         * Shuffles an array in place using the Fisher-Yates (Knuth) algorithm.
+         * @param {Array} array The array to shuffle.
+         */
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+            }
+        }
+
+        /**
+         * Creates a single card element with front (word) and back (icon) faces.
+         * @param {Object} data - An object containing the word and icon.
+         * @returns {HTMLElement} The created card container element.
+         */
+        function createCard(data) {
+            // Create the main card container (for perspective)
+            const cardContainer = document.createElement('div');
+            cardContainer.classList.add('card-container');
+
+            // Create the card element itself (for the flip transform)
+            const card = document.createElement('div');
+            card.classList.add('card');
+
+            // Create the front face (word)
+            const cardFront = document.createElement('div');
+            cardFront.classList.add('card-face', 'card-front');
+            cardFront.textContent = data.word;
+
+            // Create the back face (answer)
+            const cardBack = document.createElement('div');
+            cardBack.classList.add('card-face', 'card-back');
+            cardBack.textContent = data.answer;
+
+            // Append faces to the card
+            card.appendChild(cardFront);
+            card.appendChild(cardBack);
+
+            // Append card to its container
+            cardContainer.appendChild(card);
+
+            // Add click event listener to flip the card
+            card.addEventListener('click', () => {
+                card.classList.toggle('flipped'); // Toggle the 'flipped' class
+            });
+
+            return cardContainer;
+        }
+
+        /**
+         * Initializes the game by shuffling words and creating cards.
+         */
+        function initializeGame() {
+            // Clear any existing cards
+            cardGrid.innerHTML = '';
+
+            // Shuffle the word-icon pairs
+            shuffleArray(wordAnswerPairs);
+
+            for (let i = 0; i < 25 && i < wordAnswerPairs.length; i++) {
+                const pair = wordAnswerPairs[i];
+                const cardElement = createCard(pair);
+                cardGrid.appendChild(cardElement);
+            }
+        }
+
+        // Initialize the game when the window loads
+        window.onload = initializeGame;
+    </script>
+</body>
+</html>
