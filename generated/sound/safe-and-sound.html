@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safe and Sound Percussion Soundboard</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js CDN for audio synthesis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <style>
+        /* Custom styles for the Inter font and overall body */
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #1a202c; /* Dark background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px; /* Add some padding for smaller screens */
+            box-sizing: border-box; /* Include padding in element's total width and height */
+        }
+        /* Ensure canvas or main container fits width */
+        .container {
+            width: 100%;
+            max-width: 800px; /* Max width for desktop */
+        }
+        /* Responsive grid for buttons */
+        .sound-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Responsive columns */
+            gap: 16px; /* Gap between buttons */
+        }
+        /* Button styling */
+        .sound-button {
+            background-color: #4a5568; /* Darker gray */
+            color: #e2e8f0; /* Light text */
+            padding: 20px;
+            border-radius: 12px; /* More rounded corners */
+            font-size: 1.125rem; /* Larger text */
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            border: 2px solid transparent; /* For hover effect */
+        }
+        .sound-button:hover {
+            background-color: #636b77; /* Lighter on hover */
+            transform: translateY(-2px); /* Slight lift effect */
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            border-color: #a0aec0; /* Border on hover */
+        }
+        .sound-button:active {
+            transform: translateY(0); /* Press effect */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        /* Start Audio button specific styling */
+        #startAudioButton {
+            background-color: #4299e1; /* Blue */
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+            margin-bottom: 20px;
+        }
+        #startAudioButton:hover {
+            background-color: #3182ce; /* Darker blue on hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="container bg-gray-800 p-8 rounded-lg shadow-xl text-center">
+        <h1 class="text-3xl font-extrabold text-white mb-6">Safe and Sound Percussion</h1>
+
+        <!-- Button to start audio context due to browser policies -->
+        <button id="startAudioButton" class="sound-button">
+            Start Audio
+        </button>
+
+        <div id="soundGrid" class="sound-grid">
+            <!-- Sound buttons will be dynamically added here by JavaScript -->
+        </div>
+
+        <!-- Simple message box for errors or info, instead of alert() -->
+        <div id="messageBox" class="mt-6 p-3 bg-red-600 text-white rounded-md hidden"></div>
+    </div>
+
+    <script>
+        // Global variables for Tone.js synths
+        let kickSynth, snareSynth, hiHatSynth, clapSynth;
+        let isAudioStarted = false;
+
+        // Function to display messages in the message box
+        function showMessage(message, type = 'error') {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.textContent = message;
+            messageBox.className = `mt-6 p-3 rounded-md ${type === 'error' ? 'bg-red-600' : 'bg-green-600'} text-white`;
+            messageBox.style.display = 'block';
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 3000); // Hide after 3 seconds
+        }
+
+        // Function to initialize Tone.js synths for percussion
+        function initializeSynths() {
+            try {
+                // Kick drum synth (MembraneSynth for punchy low end)
+                kickSynth = new Tone.MembraneSynth({
+                    pitchDecay: 0.05,
+                    octaves: 10,
+                    envelope: {
+                        attack: 0.001,
+                        decay: 0.4,
+                        sustain: 0.01,
+                        release: 0.8,
+                        attackCurve: "exponential"
+                    }
+                }).toDestination();
+
+                // Snare drum synth (MembraneSynth with added noise for snap)
+                snareSynth = new Tone.MembraneSynth({
+                    pitchDecay: 0.02,
+                    octaves: 5,
+                    envelope: {
+                        attack: 0.001,
+                        decay: 0.2,
+                        sustain: 0.01,
+                        release: 0.5,
+                        attackCurve: "exponential"
+                    }
+                }).toDestination();
+                const snareNoise = new Tone.Noise("white").connect(snareSynth.noise);
+                snareNoise.start(); // Noise needs to be started
+
+                // Hi-hat synth (NoiseSynth for metallic, short sound)
+                hiHatSynth = new Tone.NoiseSynth({
+                    noise: {
+                        type: "white"
+                    },
+                    envelope: {
+                        attack: 0.001,
+                        decay: 0.05,
+                        sustain: 0,
+                        release: 0.05
+                    }
+                }).toDestination();
+
+                // Clap synth (multiple short noise bursts)
+                clapSynth = new Tone.NoiseSynth({
+                    noise: {
+                        type: "white"
+                    },
+                    envelope: {
+                        attack: 0.005,
+                        decay: 0.1,
+                        sustain: 0,
+                        release: 0.1
+                    }
+                }).toDestination();
+
+                console.log("Tone.js percussion synths initialized.");
+            } catch (error) {
+                console.error("Error initializing Tone.js synths:", error);
+                showMessage("Failed to initialize audio synths. Please try again.", 'error');
+            }
+        }
+
+        // Function to play a specific percussion sound
+        function playSound(type) {
+            if (!isAudioStarted) {
+                showMessage("Please click 'Start Audio' first!", 'error');
+                return;
+            }
+
+            try {
+                const now = Tone.now();
+                switch (type) {
+                    case 'kick':
+                        kickSynth.triggerAttackRelease("C2", "8n", now);
+                        break;
+                    case 'snare':
+                        snareSynth.triggerAttackRelease("C4", "8n", now);
+                        break;
+                    case 'hihat':
+                        hiHatSynth.triggerAttackRelease("16n", now);
+                        break;
+                    case 'clap':
+                        // Simulate a clap by triggering the noise synth multiple times
+                        clapSynth.triggerAttackRelease("32n", now);
+                        clapSynth.triggerAttackRelease("32n", now + 0.01);
+                        clapSynth.triggerAttackRelease("32n", now + 0.02);
+                        break;
+                    default:
+                        console.warn("Unknown sound type:", type);
+                        break;
+                }
+            } catch (error) {
+                console.error("Error playing sound:", error);
+                showMessage("An error occurred while playing the sound.", 'error');
+            }
+        }
+
+        // Array of sound button configurations for percussion
+        const soundButtons = [
+            { text: "Kick", type: "kick" },
+            { text: "Snare", type: "snare" },
+            // { text: "Hi-Hat", type: "hihat" },
+            // { text: "Clap", type: "clap" },
+        ];
+
+        // Function to create and append buttons to the grid
+        function createSoundButtons() {
+            const soundGrid = document.getElementById('soundGrid');
+            soundButtons.forEach(buttonInfo => {
+                const button = document.createElement('button');
+                button.textContent = buttonInfo.text;
+                button.className = 'sound-button';
+                button.addEventListener('click', () => playSound(buttonInfo.type));
+                soundGrid.appendChild(button);
+            });
+        }
+
+        // Event listener for the "Start Audio" button
+        document.getElementById('startAudioButton').addEventListener('click', async () => {
+            if (!isAudioStarted) {
+                try {
+                    await Tone.start();
+                    isAudioStarted = true;
+                    document.getElementById('startAudioButton').style.display = 'none'; // Hide the button
+                    console.log('Audio context started successfully!');
+                    showMessage('Audio context started!', 'success');
+                } catch (error) {
+                    console.error('Error starting audio context:', error);
+                    showMessage('Failed to start audio. Please ensure your browser allows audio playback.', 'error');
+                }
+            }
+        });
+
+        // Initialize synths and create buttons when the window loads
+        window.onload = function() {
+            initializeSynths();
+            createSoundButtons();
+        };
+    </script>
+</body>
+</html>

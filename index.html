@@ -4,7 +4,106 @@
         <title>Phi Dao</title>
     </head>
     <body>
-        <p>Instagram: @valenwave</p>
-        <p>T: (616) 319-3788</p>
+
     </body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phi Dao</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="./../assets/css/canvas.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-indigo-700 mb-2"></h1>
+            <p class="text-lg text-gray-600"></p>
+        </header>
+
+        <nav class="sticky top-0 bg-gray-50/80 backdrop-blur-sm z-10 mb-12 py-2 border-b border-gray-200">
+            <div class="flex justify-center items-center space-x-4 md:space-x-8">
+                <button onclick="scrollToSection('section-intro')" class="nav-button active text-sm md:text-base font-medium text-gray-500 hover:text-indigo-600 border-b-2 pb-1">Myself</button>
+                <button onclick="scrollToSection('section-project')" class="nav-button active text-sm md:text-base font-medium text-gray-500 hover:text-indigo-600 border-b-2 pb-1">Projects</button>
+            </div>
+        </nav>
+
+        <main class="space-y-16">
+
+            <section id="section-intro" class="scroll-mt-24">
+                <div class="content-card">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Myself</h2>
+                    <div class="space-y-4 text-gray-700">
+                        <p>Instagram: <a href="https://www.instagram.com/valenwave/">@valenwave</a></p>
+                        <p>T: (616) 319-3788</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="section-project" class="scroll-mt-24">
+                <div class="content-card">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Projects</h2>
+                    <div class="space-y-4 text-gray-700">
+                        <p><a href="flash-card/index.html">Flash Cards</a></p>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="text-center pt-8 border-t border-gray-200">
+                <p class="text-gray-500"></p>
+            </footer>
+
+        </main>
+    </div>
+
+    <script>
+        document.getElementById('generation-selector').addEventListener('change', function() {
+            updateChart(this.value);
+        });
+
+        function scrollToSection(sectionId) {
+            document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        const navButtons = document.querySelectorAll('.nav-button');
+        const sections = document.querySelectorAll('main section');
+
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.4
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    navButtons.forEach(button => {
+                        button.classList.remove('active');
+                        if (button.getAttribute('onclick') === `scrollToSection('${entry.target.id}')`) {
+                            button.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => {
+            observer.observe(section);
+        });
+
+        // Initial chart load
+        window.addEventListener('load', () => {
+            updateChart('LGPE');
+        });
+    </script>
+</body>
 </html>

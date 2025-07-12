@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Soundboard</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js CDN for audio synthesis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <style>
+        /* Custom styles for the Inter font and overall body */
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #1a202c; /* Dark background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px; /* Add some padding for smaller screens */
+            box-sizing: border-box; /* Include padding in element's total width and height */
+        }
+        /* Ensure canvas or main container fits width */
+        .container {
+            width: 100%;
+            max-width: 800px; /* Max width for desktop */
+        }
+        /* Responsive grid for buttons */
+        .sound-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Responsive columns */
+            gap: 16px; /* Gap between buttons */
+        }
+        /* Button styling */
+        .sound-button {
+            background-color: #4a5568; /* Darker gray */
+            color: #e2e8f0; /* Light text */
+            padding: 20px;
+            border-radius: 12px; /* More rounded corners */
+            font-size: 1.125rem; /* Larger text */
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            border: 2px solid transparent; /* For hover effect */
+        }
+        .sound-button:hover {
+            background-color: #636b77; /* Lighter on hover */
+            transform: translateY(-2px); /* Slight lift effect */
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            border-color: #a0aec0; /* Border on hover */
+        }
+        .sound-button:active {
+            transform: translateY(0); /* Press effect */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        /* Start Audio button specific styling */
+        #startAudioButton {
+            background-color: #4299e1; /* Blue */
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+            margin-bottom: 20px;
+        }
+        #startAudioButton:hover {
+            background-color: #3182ce; /* Darker blue on hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="container bg-gray-800 p-8 rounded-lg shadow-xl text-center">
+        <h1 class="text-3xl font-extrabold text-white mb-6">Soundboard Fun!</h1>
+
+        <!-- Button to start audio context due to browser policies -->
+        <button id="startAudioButton" class="sound-button">
+            Start Audio
+        </button>
+
+        <div id="soundGrid" class="sound-grid">
+            <!-- Sound buttons will be dynamically added here by JavaScript -->
+        </div>
+
+        <!-- Simple message box for errors or info, instead of alert() -->
+        <div id="messageBox" class="mt-6 p-3 bg-red-600 text-white rounded-md hidden"></div>
+    </div>
+
+    <script>
+        // Global variables for Tone.js synths
+        let pluckySynth, bassSynth, leadSynth, percussionSynth;
+        let isAudioStarted = false;
+
+        // Function to display messages in the message box
+        function showMessage(message, type = 'error') {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.textContent = message;
+            messageBox.className = `mt-6 p-3 rounded-md ${type === 'error' ? 'bg-red-600' : 'bg-green-600'} text-white`;
+            messageBox.style.display = 'block';
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 3000); // Hide after 3 seconds
+        }
+
+        // Function to initialize Tone.js synths
+        function initializeSynths() {
+            try {
+                // Plucky synth for short, percussive sounds
+                pluckySynth = new Tone.PluckSynth().toDestination();
+
+                // Bass synth for low, sustained notes
+                bassSynth = new Tone.Synth({
+                    oscillator: { type: "triangle" },
+                    envelope: {
+                        attack: 0.005,
+                        decay: 0.1,
+                        sustain: 0.3,
+                        release: 1
+                    }
+                }).toDestination();
+
+                // Lead synth for melodic sounds
+                leadSynth = new Tone.Synth({
+                    oscillator: { type: "sawtooth" },
+                    envelope: {
+                        attack: 0.01,
+                        decay: 0.2,
+                        sustain: 0.5,
+                        release: 0.8
+                    }
+                }).toDestination();
+
+                // Percussion-like synth for a sharper attack
+                percussionSynth = new Tone.MembraneSynth().toDestination();
+
+                console.log("Tone.js synths initialized.");
+            } catch (error) {
+                console.error("Error initializing Tone.js synths:", error);
+                showMessage("Failed to initialize audio synths. Please try again.", 'error');
+            }
+        }
+
+        // Function to play a specific sound
+        function playSound(type) {
+            if (!isAudioStarted) {
+                showMessage("Please click 'Start Audio' first!", 'error');
+                return;
+            }
+
+            try {
+                switch (type) {
+                    case 'pluck':
+                        pluckySynth.triggerAttackRelease("C4", "8n");
+                        break;
+                    case 'bass':
+                        bassSynth.triggerAttackRelease("C2", "4n");
+                        break;
+                    case 'lead':
+                        leadSynth.triggerAttackRelease("E4", "8n");
+                        break;
+                    case 'percussion':
+                        percussionSynth.triggerAttackRelease("C3", "8n", Tone.now());
+                        break;
+                    case 'chord':
+                        // Play a simple C major chord
+                        leadSynth.triggerAttackRelease(["C4", "E4", "G4"], "0.5");
+                        break;
+                    case 'arpeggio':
+                        // Play an arpeggiated sequence
+                        const now = Tone.now();
+                        pluckySynth.triggerAttackRelease("C4", "16n", now);
+                        pluckySynth.triggerAttackRelease("E4", "16n", now + 0.1);
+                        pluckySynth.triggerAttackRelease("G4", "16n", now + 0.2);
+                        break;
+                    case 'beep':
+                        leadSynth.triggerAttackRelease("A5", "16n");
+                        break;
+                    case 'whoosh':
+                        // Simulate a whoosh with a rapid pitch bend
+                        const whooshSynth = new Tone.NoiseSynth({
+                            envelope: {
+                                attack: 0.005,
+                                decay: 0.5,
+                                sustain: 0,
+                                release: 0.1
+                            }
+                        }).toDestination();
+                        whooshSynth.triggerAttackRelease("8n");
+                        whooshSynth.dispose(); // Clean up after playing
+                        break;
+                    default:
+                        console.warn("Unknown sound type:", type);
+                        break;
+                }
+            } catch (error) {
+                console.error("Error playing sound:", error);
+                showMessage("An error occurred while playing the sound.", 'error');
+            }
+        }
+
+        // Array of sound button configurations
+        const soundButtons = [
+            // { text: "Pluck", type: "pluck" },
+            { text: "Bass", type: "bass" },
+            { text: "Lead", type: "lead" },
+            { text: "Percussion", type: "percussion" },
+            // { text: "Chord", type: "chord" },
+            // { text: "Arpeggio", type: "arpeggio" },
+            { text: "Beep", type: "beep" },
+            // { text: "Whoosh", type: "whoosh" },
+        ];
+
+        // Function to create and append buttons to the grid
+        function createSoundButtons() {
+            const soundGrid = document.getElementById('soundGrid');
+            soundButtons.forEach(buttonInfo => {
+                const button = document.createElement('button');
+                button.textContent = buttonInfo.text;
+                button.className = 'sound-button';
+                button.addEventListener('click', () => playSound(buttonInfo.type));
+                soundGrid.appendChild(button);
+            });
+        }
+
+        // Event listener for the "Start Audio" button
+        document.getElementById('startAudioButton').addEventListener('click', async () => {
+            if (!isAudioStarted) {
+                try {
+                    await Tone.start();
+                    isAudioStarted = true;
+                    document.getElementById('startAudioButton').style.display = 'none'; // Hide the button
+                    console.log('Audio context started successfully!');
+                    showMessage('Audio context started!', 'success');
+                } catch (error) {
+                    console.error('Error starting audio context:', error);
+                    showMessage('Failed to start audio. Please ensure your browser allows audio playback.', 'error');
+                }
+            }
+        });
+
+        // Initialize synths and create buttons when the window loads
+        window.onload = function() {
+            initializeSynths();
+            createSoundButtons();
+        };
+    </script>
+</body>
+</html>
