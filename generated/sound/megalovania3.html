@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Megalovania Instrument App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #2d3748; /* Slightly lighter dark background for container */
+            border-radius: 1rem; /* Rounded corners */
+            padding: 2rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+            max-width: 900px;
+            width: 100%;
+            text-align: center;
+        }
+        .keyboard-layout { /* Renamed from keyboard-grid to better reflect its new role */
+            display: flex;
+            flex-direction: column; /* Stack rows vertically */
+            gap: 1rem; /* Space between rows */
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+        .key-row {
+            display: flex;
+            justify-content: center; /* Center keys within their row */
+            gap: 0.4rem; /* Gap between individual keys */
+            flex-wrap: wrap; /* Allow keys to wrap to next line on smaller screens */
+        }
+        .key {
+            background-color: #4a5568; /* Key background */
+            border: 2px solid #2d3748;
+            border-radius: 0.5rem;
+            padding: 1rem 0.3rem; /* Reduced padding */
+            font-size: 1rem; /* Slightly smaller font */
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.1s ease-in-out;
+            user-select: none; /* Prevent text selection */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            height: 80px; /* Reduced fixed height for keys */
+            width: 60px; /* Fixed width for better alignment */
+            flex-shrink: 0; /* Prevent shrinking on wrap */
+        }
+        .key.sharp { /* Specific style for sharp keys */
+            background-color: #333d4e; /* Darker background for sharp keys */
+            color: #e2e8f0;
+        }
+        .key-note {
+            font-size: 1rem; /* Adjusted font size */
+            color: #cbd5e0;
+        }
+        .key-label {
+            font-size: 0.7rem; /* Adjusted font size */
+            color: #a0aec0;
+            margin-top: 0.3rem; /* Reduced margin */
+        }
+        .key:active, .key.active {
+            background-color: #63b3ed; /* Active key color */
+            transform: scale(0.98);
+            box-shadow: 0 0 15px rgba(99, 179, 237, 0.7);
+        }
+        .button-primary {
+            background-color: #4299e1; /* Blue button */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: none;
+            outline: none;
+        }
+        .button-primary:hover {
+            background-color: #3182ce;
+            transform: translateY(-1px);
+        }
+        .button-primary:active {
+            background-color: #2c5282;
+            transform: translateY(0);
+        }
+        .message-box {
+            background-color: #38a169; /* Green for success/info */
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            display: none; /* Hidden by default */
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .message-box.show {
+            display: block;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-4xl font-bold mb-4 text-blue-400">Megalovania Instrument</h1>
+        <p class="text-lg text-gray-300 mb-6">Click the keys or use your keyboard to play notes, or press the button to hear Megalovania!</p>
+
+        <div id="keyboard-layout" class="keyboard-layout">
+            <!-- Sharp keys will be dynamically generated here -->
+            <div id="sharp-keys-row" class="key-row"></div>
+            <!-- Natural keys will be dynamically generated here -->
+            <div id="natural-keys-row" class="key-row"></div>
+        </div>
+
+        <button id="playMegalovaniaBtn" class="button-primary mt-4">
+            Play Megalovania
+        </button>
+    </div>
+
+    <!-- Tone.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <script>
+        // Global variables for Tone.js and UI elements
+        let synth;
+        let megalovaniaSequence;
+        let isPlaying = false;
+        const keyboardLayoutDiv = document.getElementById('keyboard-layout');
+        const sharpKeysRowDiv = document.getElementById('sharp-keys-row');
+        const naturalKeysRowDiv = document.getElementById('natural-keys-row');
+        const playMegalovaniaBtn = document.getElementById('playMegalovaniaBtn');
+        const loadingMessage = document.getElementById('loading-message');
+        const playbackMessage = document.getElementById('playback-message');
+
+        // Define the natural notes for the virtual keyboard and their corresponding keyboard keys
+        const naturalKeyboardNotes = [
+            { note: 'C4', label: 'A' },
+            { note: 'D4', label: 'S' },
+            { note: 'E4', label: 'D' },
+            { note: 'F4', label: 'F' },
+            { note: 'G4', label: 'G' },
+            { note: 'A4', label: 'H' },
+            { note: 'B4', label: 'J' },
+            { note: 'C5', label: 'K' },
+            { note: 'D5', label: 'L' },
+            { note: 'E5', label: ';' },
+            { note: 'F5', label: "'" },
+            { note: 'G5', label: 'Enter' }
+        ];
+
+        // Define the sharp notes for the virtual keyboard and their corresponding keyboard keys
+        const sharpKeyboardNotes = [
+            { note: 'C#4', label: 'Q' },
+            { note: 'D#4', label: 'W' },
+            { note: 'F#4', label: 'E' },
+            { note: 'G#4', label: 'R' },
+            { note: 'A#4', label: 'T' },
+            { note: 'C#5', label: 'Y' },
+            { note: 'D#5', label: 'U' },
+            { note: 'F#5', label: 'I' }
+        ];
+
+        // Combine all notes for keyboard event handling
+        const allKeyboardNotes = [...naturalKeyboardNotes, ...sharpKeyboardNotes];
+
+        // Define the Megalovania melody (simplified)
+        // Format: { note: "NoteName", duration: "NoteDuration" }
+        // Note durations: "8n" = eighth note, "16n" = sixteenth note, "4n" = quarter note
+        const megalovaniaMelody = [
+            { note: 'D4', duration: '8n' },
+            { note: 'D5', duration: '8n' },
+            { note: 'D4', duration: '8n' },
+            { note: 'A#4', duration: '8n' },
+            { note: 'A4', duration: '8n' },
+            { note: 'G4', duration: '8n' },
+            { note: 'F4', duration: '8n' },
+            { note: 'D4', duration: '8n' },
+            { note: 'F4', duration: '8n' },
+            { note: 'G4', duration: '8n' }, // End of first phrase
+
+            { note: 'C4', duration: '8n' }, // Start of second phrase (similar but shifted)
+            { note: 'C5', duration: '8n' },
+            { note: 'C4', duration: '8n' },
+            { note: 'G#4', duration: '8n' },
+            { note: 'G4', duration: '8n' },
+            { note: 'F4', duration: '8n' },
+            { note: 'E4', duration: '8n' },
+            { note: 'C4', duration: '8n' },
+            { note: 'E4', duration: '8n' },
+            { note: 'F4', duration: '8n' }, // End of second phrase
+
+            { note: 'B3', duration: '8n' }, // Start of third phrase
+            { note: 'B4', duration: '8n' },
+            { note: 'B3', duration: '8n' },
+            { note: 'G4', duration: '8n' },
+            { note: 'F#4', duration: '8n' },
+            { note: 'E4', duration: '8n' },
+            { note: 'D4', duration: '8n' },
+            { note: 'B3', duration: '8n' },
+            { note: 'D4', duration: '8n' },
+            { note: 'E4', duration: '8n' }, // End of third phrase
+
+            { note: 'A3', duration: '8n' }, // Start of fourth phrase
+            { note: 'A4', duration: '8n' },
+            { note: 'A3', duration: '8n' },
+            { note: 'F#4', duration: '8n' },
+            { note: 'F4', duration: '8n' },
+            { note: 'E4', duration: '8n' },
+            { note: 'D4', duration: '8n' },
+            { note: 'A3', duration: '8n' },
+            { note: 'D4', duration: '8n' },
+            { note: 'E4', duration: '8n' } // End of fourth phrase
+        ];
+
+        /**
+         * Displays a temporary message box.
+         * @param {HTMLElement} element - The message box element to show.
+         * @param {number} duration - How long to show the message in milliseconds.
+         */
+        function showMessageBox(element, duration = 3000) {
+            element.classList.add('show');
+            setTimeout(() => {
+                element.classList.remove('show');
+            }, duration);
+        }
+
+        /**
+         * Initializes the Tone.js audio engine.
+         */
+        async function initializeAudio() {
+            try {
+                // Create a PolySynth for multiple voices
+                synth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: {
+                        type: "sawtooth" // A good choice for a chiptune-like sound
+                    },
+                    envelope: {
+                        attack: 0.005,
+                        decay: 0.1,
+                        sustain: 0.3,
+                        release: 1
+                    }
+                }).toDestination();
+
+                // Create a sequence for the Megalovania melody
+                megalovaniaSequence = new Tone.Sequence((time, noteInfo) => {
+                    synth.triggerAttackRelease(noteInfo.note, noteInfo.duration, time);
+                }, megalovaniaMelody, '8n'); // '8n' sets the step size for the sequence
+
+                Tone.Transport.bpm.value = 120; // Set a suitable BPM for Megalovania
+                megalovaniaSequence.loop = false; // Do not loop by default
+                megalovaniaSequence.playbackRate = 1.5; // Adjust playback speed for better feel
+
+                // Start the Tone.js audio context
+                await Tone.start();
+                console.log('Audio context started');
+
+                // Hide loading message and enable buttons
+                loadingMessage.classList.remove('show');
+                playMegalovaniaBtn.disabled = false;
+
+            } catch (error) {
+                console.error('Error initializing audio:', error);
+                loadingMessage.textContent = 'Failed to load audio. Please refresh and try again.';
+                loadingMessage.classList.add('bg-red-500'); // Indicate error
+            }
+        }
+
+        /**
+         * Plays a single note and highlights the corresponding key.
+         * @param {string} note - The note to play (e.g., "C4").
+         * @param {string} keyId - The ID of the key element to highlight.
+         */
+        function playNote(note, keyId) {
+            if (synth) {
+                synth.triggerAttackRelease(note, '8n'); // Play note for an eighth duration
+                const keyElement = document.getElementById(keyId);
+                if (keyElement) {
+                    keyElement.classList.add('active');
+                    setTimeout(() => {
+                        keyElement.classList.remove('active');
+                    }, 100); // Remove active class after a short delay
+                }
+            }
+        }
+
+        /**
+         * Generates the virtual keyboard keys dynamically.
+         */
+        function createKeyboard() {
+            // Create natural keys
+            naturalKeyboardNotes.forEach((key) => {
+                const keyElement = document.createElement('div');
+                keyElement.id = `key-${key.label.toLowerCase()}`;
+                keyElement.className = 'key';
+                keyElement.innerHTML = `
+                    <span class="key-note">${key.note}</span>
+                    <span class="key-label">${key.label}</span>
+                `;
+                keyElement.addEventListener('mousedown', () => playNote(key.note, keyElement.id));
+                keyElement.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    playNote(key.note, keyElement.id);
+                });
+                naturalKeysRowDiv.appendChild(keyElement);
+            });
+
+            // Create sharp keys
+            sharpKeyboardNotes.forEach((key) => {
+                const keyElement = document.createElement('div');
+                keyElement.id = `key-${key.label.toLowerCase()}`;
+                keyElement.className = 'key sharp'; // Add 'sharp' class for distinct styling
+                keyElement.innerHTML = `
+                    <span class="key-note">${key.note}</span>
+                    <span class="key-label">${key.label}</span>
+                `;
+                keyElement.addEventListener('mousedown', () => playNote(key.note, keyElement.id));
+                keyElement.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    playNote(key.note, keyElement.id);
+                });
+                sharpKeysRowDiv.appendChild(keyElement);
+            });
+        }
+
+        /**
+         * Handles keyboard key presses.
+         * @param {KeyboardEvent} event - The keyboard event.
+         */
+        function handleKeyPress(event) {
+            const pressedKey = event.key.toUpperCase();
+            // Search in the combined array of all notes
+            const foundKey = allKeyboardNotes.find(k => k.label === pressedKey);
+            if (foundKey) {
+                playNote(foundKey.note, `key-${foundKey.label.toLowerCase()}`);
+            }
+        }
+
+        /**
+         * Toggles the playback of the Megalovania melody.
+         */
+        function toggleMegalovaniaPlayback() {
+            if (!synth) {
+                console.warn('Audio not initialized yet.');
+                return;
+            }
+
+            if (isPlaying) {
+                Tone.Transport.stop();
+                megalovaniaSequence.stop();
+                isPlaying = false;
+                playMegalovaniaBtn.textContent = 'Play Megalovania';
+                playbackMessage.classList.remove('show');
+            } else {
+                // Ensure sequence starts from the beginning
+                megalovaniaSequence.start(0);
+                Tone.Transport.start();
+                isPlaying = true;
+                playMegalovaniaBtn.textContent = 'Stop Playback';
+                showMessageBox(playbackMessage);
+
+                // Stop the button text change and message after the sequence finishes
+                Tone.Transport.scheduleOnce(() => {
+                    if (isPlaying) { // Only reset if it wasn't stopped manually
+                        isPlaying = false;
+                        playMegalovaniaBtn.textContent = 'Play Megalovania';
+                        playbackMessage.classList.remove('show');
+                    }
+                }, megalovaniaSequence.duration); // Schedule at the end of the sequence
+            }
+        }
+
+        // Event Listeners
+        window.addEventListener('load', () => {
+            createKeyboard();
+            initializeAudio(); // Initialize audio when the window loads
+        });
+
+        document.addEventListener('keydown', handleKeyPress);
+        playMegalovaniaBtn.addEventListener('click', toggleMegalovaniaPlayback);
+
+        // Initial state: disable button until audio is loaded
+        playMegalovaniaBtn.disabled = true;
+
+    </script>
+</body>
+</html>
