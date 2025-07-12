@@ -210,11 +210,12 @@
             // Shuffle the word-icon pairs
             shuffleArray(wordIconPairs);
 
-            // Create and append a card for each pair
-            wordIconPairs.forEach(pair => {
+            // Get the first 25
+            for (let i = 0; i < 25 && i < wordIconPairs.length; i++) {
+                const pair = wordIconPairs[i];
                 const cardElement = createCard(pair);
                 cardGrid.appendChild(cardElement);
-            });
+            }
         }
 
         // Initialize the game when the window loads

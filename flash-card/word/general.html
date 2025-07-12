@@ -114,13 +114,15 @@
             { word: "Animal", icon: "🐱" },
             { word: "Alien", icon: "👽" },
             { word: "Angry", icon: "😡" },
-            { word: "Apple", icon: "🍎" },
             { word: "Baby", icon: "👶" },
             { word: "Ball", icon: "⚽" },
             { word: "Bath", icon: "🛀" },
-            { word: "Bike", icon: "🚴‍♂️" },
+            { word: "Bike", icon: "🎈" },
+            { word: "Balloon", icon: "🚴‍♂️" },
             { word: "Book", icon: "📚" },
+            { word: "Camera", icon: "📷" },
             { word: "Car", icon: "🚗" },
+            { word: "Chair", icon: "🪑" },
             { word: "Clap", icon: "👏" },
             { word: "Clock", icon: "⏰" },
             { word: "Cloud", icon: "☁️" },
@@ -128,6 +130,7 @@
             { word: "Doctor", icon: "🧑‍⚕️" },
             { word: "Family", icon: "👨‍👩‍👧‍👦" },
             { word: "Fire", icon: "🔥" },
+            { word: "Food", icon: "🍎" },
             { word: "Ghost", icon: "👻" },
             { word: "Gift", icon: "🎁" },
             { word: "Flower", icon: "🌸" },
@@ -148,6 +151,7 @@
             { word: "Robot", icon: "🤖" },
             { word: "Rocket", icon: "🚀" },
             { word: "Scared", icon: "😱"},
+            { word: "Scissors", icon: "✂️"},
             { word: "Sick", icon: "🤒"},
             { word: "Skull", icon: "☠️"},
             { word: "Sleep", icon: "🛌"},
@@ -164,7 +168,8 @@
             { word: "Vomit", icon: "🤮" },
             { word: "Walk", icon: "🚶" },
             { word: "Water", icon: "💧" },
-            { word: "Write", icon: "✍️" }
+            { word: "Write", icon: "✍️" },
+            { word: "Zombie", icon: "🧟‍♂️" }
         ];
 
         const cardGrid = document.getElementById('cardGrid');
@@ -229,11 +234,12 @@
             // Shuffle the word-icon pairs
             shuffleArray(wordIconPairs);
 
-            // Create and append a card for each pair
-            wordIconPairs.forEach(pair => {
+            // Get the first 25
+            for (let i = 0; i < 25 && i < wordIconPairs.length; i++) {
+                const pair = wordIconPairs[i];
                 const cardElement = createCard(pair);
                 cardGrid.appendChild(cardElement);
-            });
+            }
         }
 
         // Initialize the game when the window loads

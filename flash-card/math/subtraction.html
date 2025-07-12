@@ -106,52 +106,52 @@
     <div class="card-grid" id="cardGrid"></div>
 
     <script>
-        const wordAnswerPairs = [
-            { word: "1 - 1", answer: "0" },
-            { word: "2 - 1", answer: "1" },
-            { word: "2 - 2", answer: "0" },
-            { word: "3 - 1", answer: "2" },
-            { word: "3 - 2", answer: "1" },
-            { word: "3 - 3", answer: "0" },
-            { word: "4 - 1", answer: "3" },
-            { word: "4 - 2", answer: "2" },
-            { word: "4 - 3", answer: "1" },
-            { word: "4 - 4", answer: "0" },
-            { word: "5 - 1", answer: "4" },
-            { word: "5 - 2", answer: "3" },
-            { word: "5 - 3", answer: "2" },
-            { word: "5 - 4", answer: "1" },
-            { word: "5 - 5", answer: "0" },
-            { word: "6 - 1", answer: "5" },
-            { word: "6 - 2", answer: "4" },
-            { word: "6 - 3", answer: "3" },
-            { word: "6 - 4", answer: "2" },
-            { word: "6 - 5", answer: "1" },
-            { word: "6 - 6", answer: "0" },
-            { word: "7 - 1", answer: "6" },
-            { word: "7 - 2", answer: "5" },
-            { word: "7 - 3", answer: "4" },
-            { word: "7 - 4", answer: "3" },
-            { word: "7 - 5", answer: "2" },
-            { word: "7 - 6", answer: "1" },
-            { word: "7 - 7", answer: "0" },
-            { word: "8 - 1", answer: "7" },
-            { word: "8 - 2", answer: "6" },
-            { word: "8 - 3", answer: "5" },
-            { word: "8 - 4", answer: "4" },
-            { word: "8 - 5", answer: "3" },
-            { word: "8 - 6", answer: "2" },
-            { word: "8 - 7", answer: "1" },
-            { word: "8 - 8", answer: "0" },
-            { word: "9 - 1", answer: "8" },
-            { word: "9 - 2", answer: "7" },
-            { word: "9 - 3", answer: "6" },
-            { word: "9 - 4", answer: "5" },
-            { word: "9 - 5", answer: "4" },
-            { word: "9 - 6", answer: "3" },
-            { word: "9 - 7", answer: "2" },
-            { word: "9 - 8", answer: "1" },
-            { word: "9 - 9", answer: "0" }
+        const questionAnswerPairs = [
+            { question: "1 - 1", answer: "0" },
+            { question: "2 - 1", answer: "1" },
+            { question: "2 - 2", answer: "0" },
+            { question: "3 - 1", answer: "2" },
+            { question: "3 - 2", answer: "1" },
+            { question: "3 - 3", answer: "0" },
+            { question: "4 - 1", answer: "3" },
+            { question: "4 - 2", answer: "2" },
+            { question: "4 - 3", answer: "1" },
+            { question: "4 - 4", answer: "0" },
+            { question: "5 - 1", answer: "4" },
+            { question: "5 - 2", answer: "3" },
+            { question: "5 - 3", answer: "2" },
+            { question: "5 - 4", answer: "1" },
+            { question: "5 - 5", answer: "0" },
+            { question: "6 - 1", answer: "5" },
+            { question: "6 - 2", answer: "4" },
+            { question: "6 - 3", answer: "3" },
+            { question: "6 - 4", answer: "2" },
+            { question: "6 - 5", answer: "1" },
+            { question: "6 - 6", answer: "0" },
+            { question: "7 - 1", answer: "6" },
+            { question: "7 - 2", answer: "5" },
+            { question: "7 - 3", answer: "4" },
+            { question: "7 - 4", answer: "3" },
+            { question: "7 - 5", answer: "2" },
+            { question: "7 - 6", answer: "1" },
+            { question: "7 - 7", answer: "0" },
+            { question: "8 - 1", answer: "7" },
+            { question: "8 - 2", answer: "6" },
+            { question: "8 - 3", answer: "5" },
+            { question: "8 - 4", answer: "4" },
+            { question: "8 - 5", answer: "3" },
+            { question: "8 - 6", answer: "2" },
+            { question: "8 - 7", answer: "1" },
+            { question: "8 - 8", answer: "0" },
+            { question: "9 - 1", answer: "8" },
+            { question: "9 - 2", answer: "7" },
+            { question: "9 - 3", answer: "6" },
+            { question: "9 - 4", answer: "5" },
+            { question: "9 - 5", answer: "4" },
+            { question: "9 - 6", answer: "3" },
+            { question: "9 - 7", answer: "2" },
+            { question: "9 - 8", answer: "1" },
+            { question: "9 - 9", answer: "0" }
         ];
 
         const cardGrid = document.getElementById('cardGrid');
@@ -168,8 +168,8 @@
         }
 
         /**
-         * Creates a single card element with front (word) and back (icon) faces.
-         * @param {Object} data - An object containing the word and icon.
+         * Creates a single card element with front (question) and back (answer) faces.
+         * @param {Object} data - An object containing the question and answer.
          * @returns {HTMLElement} The created card container element.
          */
         function createCard(data) {
@@ -181,10 +181,10 @@
             const card = document.createElement('div');
             card.classList.add('card');
 
-            // Create the front face (word)
+            // Create the front face (question)
             const cardFront = document.createElement('div');
             cardFront.classList.add('card-face', 'card-front');
-            cardFront.textContent = data.word;
+            cardFront.textContent = data.question;
 
             // Create the back face (answer)
             const cardBack = document.createElement('div');
@@ -214,10 +214,11 @@
             cardGrid.innerHTML = '';
 
             // Shuffle the word-icon pairs
-            shuffleArray(wordAnswerPairs);
+            shuffleArray(questionAnswerPairs);
 
-            for (let i = 0; i < 25 && i < wordAnswerPairs.length; i++) {
-                const pair = wordAnswerPairs[i];
+            // Get the first 25
+            for (let i = 0; i < 25 && i < questionAnswerPairs.length; i++) {
+                const pair = questionAnswerPairs[i];
                 const cardElement = createCard(pair);
                 cardGrid.appendChild(cardElement);
             }

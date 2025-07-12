@@ -1,0 +1,36 @@
+body {
+    font-family: 'Inter', sans-serif;
+}
+.qr-code {
+    max-width: 100px;
+    margin: 0 auto;
+}
+.center {
+    text-align: center;
+}
+.chart-container {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    height: 400px;
+    max-height: 50vh;
+}
+.content-card {
+    background-color: white;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    transition: all 0.3s ease-in-out;
+}
+.nav-button {
+    transition: all 0.2s ease-in-out;
+}
+.nav-button.active {
+    color: #4f46e5;
+    border-bottom-color: #4f46e5;
+}
+.nav-button:not(.active) {
+    border-bottom-color: transparent;
+}

@@ -106,13 +106,13 @@
     <div class="card-grid" id="cardGrid"></div>
 
     <script>
-        const wordAnswerPairs = [];
+        const questionAnswerPairs = [];
 
         for (let dividend = 1; dividend <= 100; dividend++) {
             for (let divisor = 1; divisor <= dividend; divisor++) { // Divisor cannot be greater than dividend for whole number answers
                 if (dividend % divisor === 0) { // Check for whole number answer
-                    wordAnswerPairs.push({
-                        word: `${dividend} / ${divisor}`,
+                    questionAnswerPairs.push({
+                        question: `${dividend} / ${divisor}`,
                         answer: `${dividend / divisor}`
                     });
                 }
@@ -146,10 +146,10 @@
             const card = document.createElement('div');
             card.classList.add('card');
 
-            // Create the front face (word)
+            // Create the front face (question)
             const cardFront = document.createElement('div');
             cardFront.classList.add('card-face', 'card-front');
-            cardFront.textContent = data.word;
+            cardFront.textContent = data.question;
 
             // Create the back face (answer)
             const cardBack = document.createElement('div');
@@ -179,10 +179,11 @@
             cardGrid.innerHTML = '';
 
             // Shuffle the word-icon pairs
-            shuffleArray(wordAnswerPairs);
+            shuffleArray(questionAnswerPairs);
 
-            for (let i = 0; i < 25 && i < wordAnswerPairs.length; i++) {
-                const pair = wordAnswerPairs[i];
+            // Get the first 25
+            for (let i = 0; i < 25 && i < questionAnswerPairs.length; i++) {
+                const pair = questionAnswerPairs[i];
                 const cardElement = createCard(pair);
                 cardGrid.appendChild(cardElement);
             }
