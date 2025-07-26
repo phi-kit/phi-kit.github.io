@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Prompt Gallery</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font for better aesthetics */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        /* Hide images by default for the slider, JavaScript will show them */
+        .gallery-item {
+            display: none;
+        }
+        /* Style for active slider dot */
+        .dot {
+            height: 12px;
+            width: 12px;
+            margin: 0 4px;
+            background-color: #d1d5db; /* Light gray */
+            border-radius: 50%;
+            display: inline-block;
+            transition: background-color 0.3s ease;
+            cursor: pointer;
+        }
+        .dot.active {
+            background-color: #6366f1; /* Indigo */
+        }
+        /* Slider navigation arrows */
+        .slider-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 12px 16px;
+            cursor: pointer;
+            border-radius: 50%;
+            font-size: 24px;
+            user-select: none;
+            transition: background-color 0.3s ease;
+            z-index: 10; /* Ensure arrows are above images */
+        }
+        .slider-arrow:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+        .slider-arrow.left {
+            left: 10px;
+        }
+        .slider-arrow.right {
+            right: 10px;
+        }
+
+        /* Modal specific styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0, 0, 0, 0.9); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            margin: auto;
+            display: block;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh; /* Limit height to viewport height */
+            object-fit: contain; /* Ensure full image is visible within modal */
+            border-radius: 0.75rem; /* rounded-xl */
+        }
+
+        .close-button {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="antialiased text-gray-800">
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
+
+        <!-- Header Section -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold text-gray-900 mb-2">Image Generation Showcase</h1>
+            <p class="text-lg text-gray-600">Explore the original image, its creative prompt, and generated variations.</p>
+        </header>
+
+        <!-- Section 1: Original Image -->
+        <section class="bg-white p-6 rounded-xl shadow-lg mb-8">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Original Image</h2>
+            <div class="flex justify-center items-center bg-gray-100 rounded-lg overflow-hidden p-4 cursor-pointer"
+                 onclick="openModal('silver.jpg')">
+                <img id="original-image"
+                     src="silver.jpg"
+                     alt="Original Image"
+                     class="w-full h-auto rounded-lg shadow-md object-contain max-h-[600px]"
+                     onerror="this.onerror=null;this.src='https://placehold.co/1200x600/cccccc/333333?text=Image+Not+Found';">
+            </div>
+            <p class="text-sm text-gray-500 mt-3 text-center">Click the image to view it in full size.</p>
+        </section>
+
+        <!-- Section 2: Prompt Details -->
+        <section class="bg-white p-6 rounded-xl shadow-lg mb-8">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Generation Prompt</h2>
+            <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                <p><strong>Subject:</strong> A beautiful, fair-skinned young woman with striking features.</p>
+                <p><strong>Hair:</strong></p>
+                <ul>
+                <li><strong>Style:</strong> Short, choppy, layered bob with significant volume. It&#39;s swept to one side, covering part of her forehead and framing her face.</li>
+                <li><strong>Color:</strong> Platinum blonde / silver / white, with subtle variations in tone, possibly a very slight, soft grey root shadow. The color is vibrant and clean.</li>
+                <li><strong>Texture:</strong> Appears slightly tousled and natural, with individual strands visible, suggesting a soft, airy texture rather than perfectly smooth.</li>
+                </ul>
+                <p><strong>Facial Features:</strong></p>
+                <ul>
+                <li><strong>Eyes:</strong> Piercing light blue or grey-blue eyes that are highly expressive and captivating. Well-defined eyebrows with a natural, slightly arched shape, a shade darker than her hair (possibly light brown or ash blonde).</li>
+                <li><strong>Nose:</strong> Small, delicate, and slightly upturned.</li>
+                <li><strong>Lips:</strong> Full, natural-looking, with a soft pink or nude-rose color. The lip line is well-defined but not overly sharp.</li>
+                <li><strong>Skin:</strong> Flawless, smooth, and porcelain-like complexion, with a healthy, subtle flush on the cheeks. No visible blemishes or heavy makeup.</li>
+                </ul>
+                <p><strong>Makeup:</strong></p>
+                <ul>
+                <li><strong>Minimalist and natural:</strong> Focus on enhancing her features rather than covering them.</li>
+                <li><strong>Eyes:</strong> Lightly defined upper lash line, possibly with a subtle winged liner or just mascara. Mascara on upper and lower lashes. Very light, natural eyeshadow in a neutral tone (e.g., taupe, pale pink).</li>
+                <li><strong>Cheeks:</strong> Soft, rosy blush applied lightly to the apples of her cheeks, blending seamlessly.</li>
+                <li><strong>Lips:</strong> Soft, natural lip color, possibly a satin or matte finish.</li>
+                </ul>
+                <p><strong>Expression:</strong> Calm, composed, and direct gaze towards the viewer, conveying a sense of confidence and serenity.</p>
+                <p><strong>Clothing/Attire:</strong></p>
+                <ul>
+                <li><strong>Type:</strong> Appears to be wearing a white or off-white garment, possibly a dress or top.</li>
+                <li><strong>Detail:</strong> Features intricate lace detailing, suggesting a delicate, perhaps bridal or elegant, aesthetic. The fabric has a soft, romantic texture.</li>
+                </ul>
+                <p><strong>Lighting:</strong></p>
+                <ul>
+                <li><strong>Type:</strong> Soft, diffused, and even lighting, likely natural light from a large window or a softbox setup.</li>
+                <li><strong>Direction:</strong> Appears to come from the front-left, gently illuminating her face and hair, creating subtle highlights and soft shadows that define her features without harshness.</li>
+                <li><strong>Overall feel:</strong> Bright, clean, and airy.</li>
+                </ul>
+                <p><strong>Background:</strong></p>
+                <ul>
+                    <li><strong>Color/Texture:</strong> Soft, out-of-focus background in muted grey or light neutral tones, with a textured or slightly distressed appearance (possibly a wall or fabric). The blur helps her stand out.</li>
+                    <li><strong>Depth of Field:</strong> Shallow depth of field, with the focus solely on the subject, creating a pleasing bokeh effect in the background.</li>
+                </ul>
+                <p><strong>Mood/Atmosphere:</strong> Ethereal, elegant, gentle, captivating, sophisticated, and slightly mysterious.</p>
+            </div>
+            <p class="text-sm text-gray-500 mt-3 text-center">The detailed description used to guide the image generation process.</p>
+        </section>
+
+        <!-- Section 3: Generated Images Gallery with Slider -->
+        <section class="bg-white p-6 rounded-xl shadow-lg">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Generated Images Gallery</h2>
+            <div class="relative">
+                <div id="gallery-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 overflow-hidden">
+                    <!-- Generated Image 1 -->
+                    <div class="bg-gray-100 rounded-lg overflow-hidden shadow-md gallery-item">
+                        <img src="silver1.png"
+                             alt="Generated Image 1"
+                             class="w-full h-48 object-cover rounded-t-lg"
+                             onerror="this.onerror=null;this.src='https://placehold.co/600x400/cccccc/333333?text=Image+Not+Found';">
+                        <div class="p-4">
+                            <p class="text-sm text-gray-600">Variation focusing on neon glow.</p>
+                        </div>
+                    </div>
+
+                    <!-- Generated Image 2 -->
+                    <div class="bg-gray-100 rounded-lg overflow-hidden shadow-md gallery-item">
+                        <img src="https://placehold.co/600x400/c084fc/ffffff?text=Generated+Image+2"
+                             alt="Generated Image 2"
+                             class="w-full h-48 object-cover rounded-t-lg"
+                             onerror="this.onerror=null;this.src='https://placehold.co/600x400/cccccc/333333?text=Image+Not+Found';">
+                        <div class="p-4">
+                            <p class="text-sm text-gray-600">Variation with more prominent flying vehicles.</p>
+                        </div>
+                    </div>
+
+                    <!-- Generated Image 3 -->
+                    <div class="bg-gray-100 rounded-lg overflow-hidden shadow-md gallery-item">
+                        <img src="https://placehold.co/600x400/e879f9/ffffff?text=Generated+Image+3"
+                             alt="Generated Image 3"
+                             class="w-full h-48 object-cover rounded-t-lg"
+                             onerror="this.onerror=null;this.src='https://placehold.co/600x400/cccccc/333333?text=Image+Not+Found';">
+                        <div class="p-4">
+                            <p class="text-sm text-gray-600">Variation emphasizing the sunset colors.</p>
+                        </div>
+                    </div>
+
+                    <!-- Generated Image 4 -->
+                    <div class="bg-gray-100 rounded-lg overflow-hidden shadow-md gallery-item">
+                        <img src="https://placehold.co/600x400/f472b6/ffffff?text=Generated+Image+4"
+                             alt="Generated Image 4"
+                             class="w-full h-48 object-cover rounded-t-lg"
+                             onerror="this.onerror=null;this.src='https://placehold.co/600x400/cccccc/333333?text=Image+Not+Found';">
+                        <div class="p-4">
+                            <p class="text-sm text-gray-600">Variation with a focus on mist and depth.</p>
+                        </div>
+                    </div>
+
+                    <!-- Generated Image 5 -->
+                    <div class="bg-gray-100 rounded-lg overflow-hidden shadow-md gallery-item">
+                        <img src="https://placehold.co/600x400/fb7185/ffffff?text=Generated+Image+5"
+                             alt="Generated Image 5"
+                             class="w-full h-48 object-cover rounded-t-lg"
+                             onerror="this.onerror=null;this.src='https://placehold.co/600x400/cccccc/333333?text=Image+Not+Found';">
+                        <div class="p-4">
+                            <p class="text-sm text-gray-600">Variation with a different architectural style.</p>
+                        </div>
+                    </div>
+
+                    <!-- Generated Image 6 -->
+                    <div class="bg-gray-100 rounded-lg overflow-hidden shadow-md gallery-item">
+                        <img src="https://placehold.co/600x400/a78bfa/ffffff?text=Generated+Image+6"
+                             alt="Generated Image 6"
+                             class="w-full h-48 object-cover rounded-t-lg"
+                             onerror="this.onerror=null;this.src='https://placehold.co/600x400/cccccc/333333?text=Image+Not+Found';">
+                        <div class="p-4">
+                            <p class="text-sm text-gray-600">Variation with a wider panoramic view.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slider Navigation Arrows -->
+                <a class="slider-arrow left" onclick="plusSlides(-1)">&#10094;</a>
+                <a class="slider-arrow right" onclick="plusSlides(1)">&#10095;</a>
+            </div>
+
+            <!-- Slider Dots -->
+            <div class="text-center mt-4" id="slider-dots">
+                <!-- Dots will be generated by JavaScript -->
+            </div>
+
+            <p class="text-sm text-gray-500 mt-3 text-center">A collection of images generated using the same prompt, showcasing different interpretations.</p>
+        </section>
+
+        <!-- Footer Section -->
+        <footer class="text-center mt-8 text-gray-500 text-sm">
+            <p>&copy; 2025 Image Gallery. All rights reserved.</p>
+        </footer>
+
+    </div>
+
+    <!-- The Modal -->
+    <div id="imageModal" class="modal">
+        <span class="close-button" onclick="closeModal()">&times;</span>
+        <img class="modal-content" id="img01">
+    </div>
+
+    <script>
+        let slideIndex = 0; // Current index of the first image in the visible set
+        const imagesPerSlide = 3; // Number of images to show per slide
+        let galleryItems = []; // To store all gallery image elements
+        let dotsContainer; // To store the dots container element
+
+        // Get the modal elements
+        const modal = document.getElementById("imageModal");
+        const modalImg = document.getElementById("img01");
+
+        // Function to show the current set of images for the slider
+        function showSlides() {
+            // Get all gallery items if not already fetched
+            if (galleryItems.length === 0) {
+                galleryItems = document.querySelectorAll('.gallery-item');
+                dotsContainer = document.getElementById('slider-dots');
+                createDots(); // Create dots when images are first loaded
+            }
+
+            // Hide all images
+            galleryItems.forEach(item => {
+                item.style.display = 'none';
+            });
+
+            // Calculate the start and end index for the current slide
+            const startIndex = slideIndex;
+            const endIndex = Math.min(slideIndex + imagesPerSlide, galleryItems.length);
+
+            // Display the images for the current slide
+            for (let i = startIndex; i < endIndex; i++) {
+                galleryItems[i].style.display = 'block';
+            }
+
+            updateDots(); // Update active dot
+        }
+
+        // Function to navigate slides
+        function plusSlides(n) {
+            slideIndex += n;
+
+            // Loop around if going out of bounds
+            if (slideIndex < 0) {
+                slideIndex = galleryItems.length - imagesPerSlide;
+            } else if (slideIndex >= galleryItems.length) {
+                slideIndex = 0;
+            }
+            showSlides();
+        }
+
+        // Function to jump to a specific slide
+        function currentSlide(n) {
+            slideIndex = n * imagesPerSlide; // Each dot represents a group of images
+            showSlides();
+        }
+
+        // Function to create dots for navigation
+        function createDots() {
+            dotsContainer.innerHTML = ''; // Clear existing dots
+            const numDots = Math.ceil(galleryItems.length / imagesPerSlide);
+            for (let i = 0; i < numDots; i++) {
+                const dot = document.createElement('span');
+                dot.classList.add('dot');
+                dot.onclick = () => currentSlide(i);
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        // Function to update the active dot
+        function updateDots() {
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                // Determine which dot should be active based on the current slideIndex
+                if (index * imagesPerSlide === slideIndex) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+
+        // Function to open the modal
+        function openModal(imageSrc) {
+            modal.style.display = "flex"; // Use flex to center content
+            modalImg.src = imageSrc;
+        }
+
+        // Function to close the modal
+        function closeModal() {
+            modal.style.display = "none";
+        }
+
+        // Close the modal if the user clicks anywhere outside of the image
+        modal.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        // Initialize the slider when the window loads
+        window.onload = function() {
+            showSlides();
+        };
+    </script>
+</body>
+</html>

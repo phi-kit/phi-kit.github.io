@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Prompt Gallery</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font for better aesthetics */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+    </style>
+</head>
+<body class="antialiased text-gray-800">
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
+
+        <!-- Header Section -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold text-gray-900 mb-2">Image Generation Showcase</h1>
+            <p class="text-lg text-gray-600">Explore the original image, its creative prompt, and generated variations.</p>
+        </header>
+
+        <!-- Section 1: Original Image -->
+        <section class="bg-white p-6 rounded-xl shadow-lg mb-8">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Original Image</h2>
+            <div class="flex justify-center items-center bg-gray-100 rounded-lg overflow-hidden p-4">
+                <img src="https://placehold.co/1200x600/a78bfa/ffffff?text=Original+Image"
+                     alt="Original Image"
+                     class="w-full h-auto rounded-lg shadow-md object-cover max-h-[600px]"
+                     onerror="this.onerror=null;this.src='https://placehold.co/1200x600/cccccc/333333?text=Image+Not+Found';">
+            </div>
+            <p class="text-sm text-gray-500 mt-3 text-center">This is the base image used for inspiration.</p>
+        </section>
+
+        <!-- Section 2: Prompt Details -->
+        <section class="bg-white p-6 rounded-xl shadow-lg mb-8">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Generation Prompt</h2>
+            <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                <p class="text-gray-700 leading-relaxed text-lg">
+                    "A futuristic cityscape at sunset, with towering skyscrapers reflecting the orange and purple hues of the sky. Neon lights illuminate the streets below, bustling with flying vehicles and pedestrians. The style should be hyperrealistic with a touch of cyberpunk aesthetics, focusing on intricate details and dynamic lighting. Add a subtle mist in the lower parts of the city to enhance depth."
+                </p>
+            </div>
+            <p class="text-sm text-gray-500 mt-3 text-center">The detailed description used to guide the image generation process.</p>
+        </section>
+
+        <!-- Section 3: Generated Images Gallery -->
+        <section class="bg-white p-6 rounded-xl shadow-lg">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Generated Images Gallery</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Generated Image 1 -->
+                <div class="bg-gray-100 rounded-lg overflow-hidden shadow-md">
+                    <img src="https://placehold.co/600x400/818cf8/ffffff?text=Generated+Image+1"
+                         alt="Generated Image 1"
+                         class="w-full h-48 object-cover rounded-t-lg"
+                         onerror="this.onerror=null;this.src='https://placehold.co/600x400/cccccc/333333?text=Image+Not+Found';">
+                    <div class="p-4">
+                        <p class="text-sm text-gray-600">Variation focusing on neon glow.</p>
+                    </div>
+                </div>
+
+                <!-- Generated Image 2 -->
+                <div class="bg-gray-100 rounded-lg overflow-hidden shadow-md">
+                    <img src="https://placehold.co/600x400/c084fc/ffffff?text=Generated+Image+2"
+                         alt="Generated Image 2"
+                         class="w-full h-48 object-cover rounded-t-lg"
+                         onerror="this.onerror=null;this.src='https://placehold.co/600x400/cccccc/333333?text=Image+Not+Found';">
+                    <div class="p-4">
+                        <p class="text-sm text-gray-600">Variation with more prominent flying vehicles.</p>
+                    </div>
+                </div>
+
+                <!-- Generated Image 3 -->
+                <div class="bg-gray-100 rounded-lg overflow-hidden shadow-md">
+                    <img src="https://placehold.co/600x400/e879f9/ffffff?text=Generated+Image+3"
+                         alt="Generated Image 3"
+                         class="w-full h-48 object-cover rounded-t-lg"
+                         onerror="this.onerror=null;this.src='https://placehold.co/600x400/cccccc/333333?text=Image+Not+Found';">
+                    <div class="p-4">
+                        <p class="text-sm text-gray-600">Variation emphasizing the sunset colors.</p>
+                    </div>
+                </div>
+
+                <!-- Generated Image 4 -->
+                <div class="bg-gray-100 rounded-lg overflow-hidden shadow-md">
+                    <img src="https://placehold.co/600x400/f472b6/ffffff?text=Generated+Image+4"
+                         alt="Generated Image 4"
+                         class="w-full h-48 object-cover rounded-t-lg"
+                         onerror="this.onerror=null;this.src='https://placehold.co/600x400/cccccc/333333?text=Image+Not+Found';">
+                    <div class="p-4">
+                        <p class="text-sm text-gray-600">Variation with a focus on mist and depth.</p>
+                    </div>
+                </div>
+
+                <!-- Generated Image 5 -->
+                <div class="bg-gray-100 rounded-lg overflow-hidden shadow-md">
+                    <img src="https://placehold.co/600x400/fb7185/ffffff?text=Generated+Image+5"
+                         alt="Generated Image 5"
+                         class="w-full h-48 object-cover rounded-t-lg"
+                         onerror="this.onerror=null;this.src='https://placehold.co/600x400/cccccc/333333?text=Image+Not+Found';">
+                    <div class="p-4">
+                        <p class="text-sm text-gray-600">Variation with a different architectural style.</p>
+                    </div>
+                </div>
+
+                <!-- Generated Image 6 -->
+                <div class="bg-gray-100 rounded-lg overflow-hidden shadow-md">
+                    <img src="https://placehold.co/600x400/a78bfa/ffffff?text=Generated+Image+6"
+                         alt="Generated Image 6"
+                         class="w-full h-48 object-cover rounded-t-lg"
+                         onerror="this.onerror=null;this.src='https://placehold.co/600x400/cccccc/333333?text=Image+Not+Found';">
+                    <div class="p-4">
+                        <p class="text-sm text-gray-600">Variation with a wider panoramic view.</p>
+                    </div>
+                </div>
+            </div>
+            <p class="text-sm text-gray-500 mt-3 text-center">A collection of images generated using the same prompt, showcasing different interpretations.</p>
+        </section>
+
+        <!-- Footer Section -->
+        <footer class="text-center mt-8 text-gray-500 text-sm">
+            <p>&copy; 2025 Image Gallery. All rights reserved.</p>
+        </footer>
+
+    </div>
+</body>
+</html>
