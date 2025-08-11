@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rhythm Game</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #1a1a2e; /* Dark blue-purple background */
+            color: #e0e0e0; /* Light gray text */
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: hidden; /* Prevent scrollbars */
+        }
+
+        .game-container {
+            background-color: #2a2a4a; /* Slightly lighter background for the game area */
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            text-align: center;
+            max-width: 90%; /* Responsive max-width */
+            width: 600px; /* Base width */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            position: relative;
+        }
+
+        h1 {
+            color: #bb86fc; /* Purple heading */
+            margin-bottom: 15px;
+            font-size: 2.5em;
+            text-shadow: 0 0 10px rgba(187, 134, 252, 0.6);
+        }
+
+        canvas {
+            background-color: #1a1a2e; /* Darker canvas background */
+            border: 3px solid #bb86fc; /* Purple border */
+            border-radius: 10px;
+            display: block;
+            touch-action: none; /* Prevent default touch actions like scrolling */
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .score, .lives {
+            color: #03dac6; /* Teal color for info */
+        }
+
+        .message-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            font-size: 1.5em;
+            color: #e0e0e0;
+            text-align: center;
+            max-width: 90%;
+        }
+
+        .message-box button {
+            background-color: #03dac6; /* Teal button */
+            color: #1a1a2e;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .message-box button:hover {
+            background-color: #018786; /* Darker teal on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .message-box button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Mobile controls */
+        .mobile-controls {
+            display: none; /* Hidden by default, shown on small screens */
+            width: 100%;
+            margin-top: 20px;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .mobile-button {
+            background-color: #4a4a6e; /* Darker button for mobile */
+            color: #e0e0e0;
+            border: 2px solid #bb86fc;
+            border-radius: 10px;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            user-select: none; /* Prevent text selection on touch */
+        }
+
+        .mobile-button:active {
+            background-color: #bb86fc;
+            transform: scale(0.95);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+            .game-info {
+                font-size: 1em;
+            }
+            .game-container {
+                padding: 15px;
+            }
+            .message-box {
+                font-size: 1.2em;
+                padding: 20px 30px;
+            }
+            .message-box button {
+                padding: 10px 20px;
+                font-size: 1em;
+            }
+            .mobile-controls {
+                display: flex; /* Show on smaller screens */
+            }
+        }
+
+        @media (max-width: 480px) {
+            .game-container {
+                width: 100%;
+                padding: 10px;
+            }
+            .mobile-button {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Rhythm Rush</h1>
+        <div class="game-info">
+            <div class="score">Score: <span id="score">0</span></div>
+            <div class="lives">Lives: <span id="lives">5</span></div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+
+        <div class="mobile-controls">
+            <div class="mobile-button" id="mobileLeft"><i class="fas fa-arrow-left"></i></div>
+            <div class="mobile-button" id="mobileDown"><i class="fas fa-arrow-down"></i></div>
+            <div class="mobile-button" id="mobileUp"><i class="fas fa-arrow-up"></i></div>
+            <div class="mobile-button" id="mobileRight"><i class="fas fa-arrow-right"></i></div>
+        </div>
+
+        <div id="messageBox" class="message-box">
+            <p id="messageText"></p>
+            <button id="startButton">Start Game</button>
+        </div>
+    </div>
+
+    <script>
+        // Game constants and variables
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const livesDisplay = document.getElementById('lives');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const startButton = document.getElementById('startButton');
+
+        // Mobile control buttons
+        const mobileLeft = document.getElementById('mobileLeft');
+        const mobileDown = document.getElementById('mobileDown');
+        const mobileUp = document.getElementById('mobileUp');
+        const mobileRight = document.getElementById('mobileRight');
+
+        // Game configuration
+        const NOTE_SPEED = 5; // Pixels per frame
+        const NOTE_SIZE = 40; // Width/height of a note
+        const TARGET_Y = 50; // Y-coordinate for target arrows (from bottom)
+        const LANE_WIDTH = NOTE_SIZE + 10; // Width of each lane
+        const NUM_LANES = 4; // Left, Down, Up, Right
+        const STARTING_LIVES = 5;
+        const PERFECT_SCORE = 100;
+        const GOOD_SCORE = 50;
+        const MISS_PENALTY = 20; // Score penalty for a miss
+        const MISS_THRESHOLD = 15; // Pixels away from target to be a miss
+        const HIT_THRESHOLD = 10; // Pixels away from target to be a perfect hit
+        const NOTE_SPAWN_INTERVAL = 60; // Frames between note spawns (lower for faster game)
+
+        // Game state variables
+        let score = 0;
+        let lives = STARTING_LIVES;
+        let notes = []; // Array to hold active notes
+        let frameCount = 0;
+        let gameRunning = false;
+        let animationFrameId;
+
+        // Key mappings
+        const keyMap = {
+            'ArrowLeft': 0,
+            'ArrowDown': 1,
+            'ArrowUp': 2,
+            'ArrowRight': 3,
+            // For mobile touch events, we'll map directly to lane index
+        };
+
+        // Arrow drawing function (using Font Awesome icons)
+        function drawArrow(ctx, laneIndex, x, y, size, color) {
+            ctx.font = `${size}px "Font Awesome 5 Free"`;
+            ctx.fontWeight = '900'; // Font Awesome solid icons
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            let icon = '';
+            switch (laneIndex) {
+                case 0: icon = '\uf060'; break; // fa-arrow-left
+                case 1: icon = '\uf063'; break; // fa-arrow-down
+                case 2: icon = '\uf062'; break; // fa-arrow-up
+                case 3: icon = '\uf061'; break; // fa-arrow-right
+            }
+            ctx.fillText(icon, x + size / 2, y + size / 2);
+        }
+
+        // Initialize canvas size and responsiveness
+        function resizeCanvas() {
+            canvas.width = LANE_WIDTH * NUM_LANES + 20; // Add some padding
+            canvas.height = window.innerHeight * 0.7; // 70% of viewport height
+            if (canvas.height > 600) canvas.height = 600; // Max height
+            if (canvas.width > document.querySelector('.game-container').clientWidth - 40) {
+                canvas.width = document.querySelector('.game-container').clientWidth - 40;
+                // Adjust LANE_WIDTH if canvas width is constrained
+                LANE_WIDTH = (canvas.width - 20) / NUM_LANES;
+                NOTE_SIZE = LANE_WIDTH - 10;
+            }
+            drawGame(); // Redraw after resize
+        }
+
+        // Draw static target arrows at the bottom
+        function drawTargets() {
+            const targetYPos = canvas.height - TARGET_Y - NOTE_SIZE;
+            for (let i = 0; i < NUM_LANES; i++) {
+                const x = 10 + i * LANE_WIDTH;
+                drawArrow(ctx, i, x, targetYPos, NOTE_SIZE, '#bb86fc'); // Purple targets
+            }
+        }
+
+        // Draw notes
+        function drawNotes() {
+            notes.forEach(note => {
+                const x = 10 + note.lane * LANE_WIDTH;
+                drawArrow(ctx, note.lane, x, note.y, NOTE_SIZE, '#03dac6'); // Teal notes
+            });
+        }
+
+        // Update game state
+        function updateGame() {
+            // Move notes
+            notes.forEach(note => {
+                note.y -= NOTE_SPEED;
+            });
+
+            // Remove notes that have passed the target area and penalize
+            for (let i = notes.length - 1; i >= 0; i--) {
+                const note = notes[i];
+                const targetYPos = canvas.height - TARGET_Y - NOTE_SIZE;
+                // If note has passed the target area by a significant margin
+                if (note.y < targetYPos - MISS_THRESHOLD * 2 && !note.missed) {
+                    notes.splice(i, 1); // Remove note
+                    score = Math.max(0, score - MISS_PENALTY); // Penalize score
+                    lives--;
+                    updateUI();
+                    if (lives <= 0) {
+                        endGame();
+                    }
+                }
+            }
+
+            // Randomly spawn new notes
+            if (frameCount % NOTE_SPAWN_INTERVAL === 0) {
+                const lane = Math.floor(Math.random() * NUM_LANES);
+                notes.push({
+                    lane: lane,
+                    y: canvas.height, // Start at the bottom
+                    hit: false,       // Flag to prevent double hits
+                    missed: false     // Flag to prevent double misses
+                });
+            }
+        }
+
+        // Draw everything
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+            drawTargets();
+            drawNotes();
+        }
+
+        // Game loop
+        function animate() {
+            if (!gameRunning) return;
+
+            updateGame();
+            drawGame();
+            updateUI();
+
+            frameCount++;
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        // Handle key presses
+        function handleKeyPress(event) {
+            if (!gameRunning) return;
+
+            const laneIndex = keyMap[event.key];
+            if (laneIndex !== undefined) {
+                checkHit(laneIndex);
+            }
+        }
+
+        // Handle touch presses for mobile buttons
+        function handleTouchPress(laneIndex) {
+            if (!gameRunning) return;
+            checkHit(laneIndex);
+        }
+
+        // Check if a note was hit
+        function checkHit(pressedLane) {
+            const targetYPos = canvas.height - TARGET_Y - NOTE_SIZE;
+            let hit = false;
+
+            for (let i = notes.length - 1; i >= 0; i--) {
+                const note = notes[i];
+                if (note.lane === pressedLane && !note.hit && !note.missed) {
+                    const noteCenterY = note.y + NOTE_SIZE / 2;
+                    const targetCenterY = targetYPos + NOTE_SIZE / 2;
+                    const distance = Math.abs(noteCenterY - targetCenterY);
+
+                    if (distance <= HIT_THRESHOLD) {
+                        score += PERFECT_SCORE;
+                        note.hit = true;
+                        notes.splice(i, 1); // Remove hit note
+                        hit = true;
+                        break; // Only hit one note per press
+                    } else if (distance <= MISS_THRESHOLD) {
+                        score += GOOD_SCORE;
+                        note.hit = true;
+                        notes.splice(i, 1); // Remove hit note
+                        hit = true;
+                        break; // Only hit one note per press
+                    }
+                }
+            }
+
+            // If no note was hit within the threshold, it's a miss
+            if (!hit) {
+                // Find the closest note in the pressed lane that hasn't been processed
+                let closestNote = null;
+                let minDistance = Infinity;
+
+                notes.forEach(note => {
+                    if (note.lane === pressedLane && !note.hit && !note.missed) {
+                        const noteCenterY = note.y + NOTE_SIZE / 2;
+                        const targetCenterY = targetYPos + NOTE_SIZE / 2;
+                        const distance = Math.abs(noteCenterY - targetCenterY);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestNote = note;
+                        }
+                    }
+                });
+
+                // If there was a note in the lane but it was outside the hit/miss threshold, penalize
+                if (closestNote && minDistance > MISS_THRESHOLD) {
+                    score = Math.max(0, score - MISS_PENALTY);
+                    lives--;
+                    closestNote.missed = true; // Mark as missed
+                    // Do not remove immediately, let it scroll off screen for visual feedback
+                    updateUI();
+                    if (lives <= 0) {
+                        endGame();
+                    }
+                } else if (!closestNote) {
+                    // If no note in the lane, still a penalty for pressing nothing
+                    score = Math.max(0, score - MISS_PENALTY);
+                    lives--;
+                    updateUI();
+                    if (lives <= 0) {
+                        endGame();
+                    }
+                }
+            }
+        }
+
+        // Update score and lives display
+        function updateUI() {
+            scoreDisplay.textContent = score;
+            livesDisplay.textContent = lives;
+        }
+
+        // Start the game
+        function startGame() {
+            score = 0;
+            lives = STARTING_LIVES;
+            notes = [];
+            frameCount = 0;
+            gameRunning = true;
+            messageBox.style.display = 'none';
+            updateUI();
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId); // Stop any previous animation
+            }
+            animate();
+        }
+
+        // End the game
+        function endGame() {
+            gameRunning = false;
+            cancelAnimationFrame(animationFrameId);
+            messageText.textContent = `Game Over! Your final score: ${score}`;
+            startButton.textContent = 'Play Again';
+            messageBox.style.display = 'flex';
+        }
+
+        // Event Listeners
+        window.addEventListener('resize', resizeCanvas);
+        document.addEventListener('keydown', handleKeyPress);
+        startButton.addEventListener('click', startGame);
+
+        // Mobile button event listeners
+        mobileLeft.addEventListener('pointerdown', () => handleTouchPress(0));
+        mobileDown.addEventListener('pointerdown', () => handleTouchPress(1));
+        mobileUp.addEventListener('pointerdown', () => handleTouchPress(2));
+        mobileRight.addEventListener('pointerdown', () => handleTouchPress(3));
+
+        // Initial setup
+        window.onload = function() {
+            resizeCanvas(); // Set initial canvas size
+            messageText.textContent = 'Press Start to begin!';
+            messageBox.style.display = 'flex';
+            drawGame(); // Draw initial empty game board
+        };
+
+    </script>
+</body>
+</html>
