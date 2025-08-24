@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Speaker</title>
+    <!-- Tailwind CSS CDN for easy styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Responsive grid columns */
+            gap: 16px; /* Gap between cards */
+            max-width: 960px; /* Max width for the grid */
+            width: 100%;
+            padding: 20px;
+            background-color: #ffffff; /* White background for the grid container */
+            border-radius: 16px; /* Rounded corners for the container */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); /* Soft shadow */
+        }
+
+        .card {
+            height: 150px; /* Fixed height for cards */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px; /* Rounded corners for cards */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Card shadow */
+            cursor: pointer;
+            background-color: #6366f1; /* Indigo background */
+            color: #ffffff; /* White text */
+            font-size: 1.5rem; /* Larger font for content */
+            font-weight: 600;
+            padding: 10px;
+            box-sizing: border-box;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s; /* Smooth transition for hover effect */
+        }
+
+        .card:hover {
+            transform: translateY(-5px); /* Lift card on hover */
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15); /* Increase shadow on hover */
+        }
+
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 640px) {
+            .card-grid {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+                gap: 12px;
+                padding: 15px;
+            }
+            .card {
+                height: 120px;
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="card-grid" id="cardGrid">
+        <!-- Cards will be injected here by JavaScript -->
+    </div>
+
+    <script>
+        // Define the word-icon pairs. The icons are no longer used but kept for data reference.
+        const wordIconPairs = [
+            { word: "Animal", icon: "🐱" },
+            { word: "Alien", icon: "👽" },
+            { word: "Angry", icon: "😡" },
+            { word: "Baby", icon: "👶" },
+            { word: "Ball", icon: "⚽" },
+            { word: "Bath", icon: "🛀" },
+            { word: "Bike", icon: "🚴‍♂️" },
+            { word: "Balloon", icon: "🎈" },
+            { word: "Book", icon: "📚" },
+            { word: "Camera", icon: "📷" },
+            { word: "Car", icon: "🚗" },
+            { word: "Chair", icon: "🪑" },
+            { word: "Clap", icon: "👏" },
+            { word: "Clock", icon: "⏰" },
+            { word: "Cloud", icon: "☁️" },
+            { word: "Dead", icon: "😵" },
+            { word: "Doctor", icon: "🧑‍⚕️" },
+            { word: "Family", icon: "👨‍👩‍👧‍👦" },
+            { word: "Fire", icon: "🔥" },
+            { word: "Food", icon: "🍎" },
+            { word: "Ghost", icon: "👻" },
+            { word: "Gift", icon: "🎁" },
+            { word: "Flower", icon: "🌸" },
+            { word: "Happy", icon: "😊" },
+            { word: "Hide", icon: "🫣" },
+            { word: "Heart", icon: "❤️" },
+            { word: "House", icon: "🏠" },
+            { word: "Hurt", icon: "🤕" },
+            { word: "King", icon: "🤴" },
+            { word: "Lightning", icon: "⚡" },
+            { word: "Moon", icon: "🌙" },
+            { word: "Mushroom", icon: "🍄" },
+            { word: "Music", icon: "🎵" },
+            { word: "Pencil", icon: "✏️" },
+            { word: "Police", icon: "👮" },
+            { word: "Poop", icon: "💩" },
+            { word: "Rainbow", icon: "🌈" },
+            { word: "Robot", icon: "🤖" },
+            { word: "Rocket", icon: "🚀" },
+            { word: "Scared", icon: "😱"},
+            { word: "Scissors", icon: "✂️"},
+            { word: "Sick", icon: "🤒"},
+            { word: "Skull", icon: "☠️"},
+            { word: "Sleep", icon: "🛌"},
+            { word: "Sleepy", icon: "😴"},
+            { word: "Snowman", icon: "☃️"},
+            { word: "Sparkles", icon: "✨"},
+            { word: "Speak", icon: "🗣️"},
+            { word: "Star", icon: "⭐" },
+            { word: "Sun", icon: "☀️" },
+            { word: "Surf", icon: "🏄‍♂️" },
+            { word: "Teacher", icon: "👨🏽‍🏫" },
+            { word: "Tired", icon: "🥱" },
+            { word: "Tree", icon: "🌳" },
+            { word: "Vomit", icon: "🤮" },
+            { word: "Walk", icon: "🚶" },
+            { word: "Water", icon: "💧" },
+            { word: "Write", icon: "✍️" },
+            { word: "Zombie", icon: "🧟‍♂️" }
+        ];
+
+        const cardGrid = document.getElementById('cardGrid');
+
+        /**
+         * Shuffles an array in place using the Fisher-Yates (Knuth) algorithm.
+         * @param {Array} array The array to shuffle.
+         */
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+            }
+        }
+
+        /**
+         * Creates a single card element that speaks its word when clicked.
+         * @param {Object} data - An object containing the word.
+         * @returns {HTMLElement} The created card element.
+         */
+        function createCard(data) {
+            // Create the card element
+            const card = document.createElement('div');
+            card.classList.add('card');
+            card.textContent = data.word;
+
+            // Add click event listener to speak the word
+            card.addEventListener('click', () => {
+                // Cancel any ongoing speech to prevent overlap
+                window.speechSynthesis.cancel();
+                
+                // Create a new speech synthesis utterance with the word
+                const utterance = new SpeechSynthesisUtterance(data.word);
+                
+                // Speak the word
+                window.speechSynthesis.speak(utterance);
+            });
+
+            return card;
+        }
+
+        /**
+         * Initializes the app by shuffling words and creating cards.
+         */
+        function initializeApp() {
+            // Clear any existing cards
+            cardGrid.innerHTML = '';
+
+            // Shuffle the word-icon pairs
+            shuffleArray(wordIconPairs);
+
+            // Create and display the first 25 words from the shuffled list
+            for (let i = 0; i < 25 && i < wordIconPairs.length; i++) {
+                const pair = wordIconPairs[i];
+                const cardElement = createCard(pair);
+                cardGrid.appendChild(cardElement);
+            }
+        }
+
+        // Initialize the app when the window loads
+        window.onload = initializeApp;
+    </script>
+</body>
+</html>
