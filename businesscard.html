@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Business Card for Phi Dao</title>
+    <title>Digital Business Card for <span id="page-container">_</span></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,24 +24,24 @@
 
             <!-- Name and Title -->
             <div class="text-center mt-4">
-                <h1 id="name-container" class="text-2xl font-bold text-gray-800 dark:text-white"></h1>
-                <p class="text-md text-gray-500 dark:text-gray-400">Web solutions developer</p>
+                <h1 id="name-container" class="text-2xl font-bold text-gray-800 dark:text-white">_</h1>
+                <p id="title-container" class="text-md text-gray-500 dark:text-gray-400">_</p>
             </div>
 
             <!-- Tagline -->
-            <p class="text-center text-gray-600 dark:text-gray-300 mt-4 text-sm">
-                Focus on data management and AI generation.
+            <p id="tagline-container" class="text-center text-gray-600 dark:text-gray-300 mt-4 text-sm">
+                _
             </p>
 
             <!-- Contact Information -->
             <div class="mt-6 w-full text-sm">
                 <div class="flex items-center text-gray-700 dark:text-gray-300 mb-3">
                     <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                    <span>phi.dao@gmail.com</span>
+                    <span id="email-container">_</span>
                 </div>
                 <div class="flex items-center text-gray-700 dark:text-gray-300">
                      <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                    <span>(616) 551-6787</span>
+                    <span id="phone-container">_</span>
                 </div>
             </div>
 
@@ -68,10 +68,20 @@
         // --- Main function to fetch and display data ---
         async function loadContent() {
             // Target containers
+            // const pageContainer = document.getElementById('page-container');
             const nameContainer = document.getElementById('name-container');
-            
+            // const titleContainer = document.getElementById('title-container');
+            // const taglineContainer = document.getElementById('tagline-container');
+            // const emailContainer = document.getElementById('email-container');
+            // const phoneContainer = document.getElementById('phone-container');
+
             // Show loading indicators
+            // showLoadingState(pageContainer, 1);
             showLoadingState(nameContainer, 1);
+            // showLoadingState(titleContainer, 1);
+            // showLoadingState(taglineContainer, 1);
+            // showLoadingState(emailContainer, 1);
+            // showLoadingState(phoneContainer, 1);
 
             try {
                 // Use the Fetch API to get the JSON file
@@ -93,7 +103,12 @@
                 nameContainer.innerHTML = '';
 
                 // Populate the containers with the fetched data
+                populatePage(data.name);
                 populateName(data.name);
+                populateTitle(data.title);
+                populateTagline(data.tagline);
+                populateEmail(data.email);
+                populatePhone(data.phone);
 
             } catch (error) {
                 // If something goes wrong, log it and show an error message
@@ -102,18 +117,70 @@
             }
         }
 
-        function populateName(name) {
-            const container = document.getElementById('name-container');
-            if (!name) {
-                container.innerHTML = '<p>No name found in the data file.</p>';
+        function populatePage(field) {
+            const container = document.getElementById('page-container');
+            if (!field) {
+                container.innerHTML = `<p>No page title found in the data file.</p>`;
                 return;
             }
             
-            container.innerHTML = `${name}`;
+            container.innerHTML = `${field}`;
+        }
+
+        function populateName(field) {
+            const container = document.getElementById('name-container');
+            if (!field) {
+                container.innerHTML = `<p>No name found in the data file.</p>`;
+                return;
+            }
+            
+            container.innerHTML = `${field}`;
+        }
+
+        function populateTitle(field) {
+            const container = document.getElementById('title-container');
+            if (!field) {
+                container.innerHTML = `<p>No title found in the data file.</p>`;
+                return;
+            }
+            
+            container.innerHTML = `${field}`;
+        }
+
+        function populateTagline(field) {
+            const container = document.getElementById('tagline-container');
+            if (!field) {
+                container.innerHTML = `<p>No tagline found in the data file.</p>`;
+                return;
+            }
+            
+            container.innerHTML = `${field}`;
+        }
+
+        function populateEmail(field) {
+            const container = document.getElementById('email-container');
+            if (!field) {
+                container.innerHTML = `<p>No email found in the data file.</p>`;
+                return;
+            }
+            
+            container.innerHTML = `${field}`;
+        }
+
+        function populatePhone(field) {
+            const container = document.getElementById('phone-container');
+            if (!field) {
+                container.innerHTML = `<p>No phone found in the data file.</p>`;
+                return;
+            }
+            
+            container.innerHTML = `${field}`;
         }
 
         // --- Helper function to show a loading state ---
         function showLoadingState(container, count) {
+            console.log(container);
+
             container.innerHTML = ''; // Clear previous content
             for (let i = 0; i < count; i++) {
                 const loaderCard = `
