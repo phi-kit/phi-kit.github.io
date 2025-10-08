@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Business Card</title>
+    <title>Digital Business Card for Phi Dao</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -68,7 +68,7 @@
         // --- Main function to fetch and display data ---
         async function loadContent() {
             // Target containers
-            const nameContainer = document.getELementById('name-container');
+            const nameContainer = document.getElementById('name-container');
             
             // Show loading indicators
             showLoadingState(nameContainer, 1);
@@ -109,7 +109,7 @@
                 return;
             }
             
-            container.innerHTML = "${name}";
+            container.innerHTML = `${name}`;
         }
 
         // --- Helper function to show a loading state ---
