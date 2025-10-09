@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cloudinary JS Upload</title>
+</head>
+<body>
+
+    <h2>Cloudinary Upload Widget Example</h2>
+    <button id="upload_widget">Upload Image</button>
+
+    <div style="margin-top: 15px;">
+        <input type="text" id="transformed_url_box" size="60" readonly>
+        <button id="copy_button">Copy</button>
+    </div>
+
+    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>  
+
+    <script type="text/javascript">  
+      // NEW: Get references to the new elements
+      const urlBox = document.getElementById("transformed_url_box");
+      const copyButton = document.getElementById("copy_button");
+
+      // 1. Configure the widget
+      const myWidget = cloudinary.createUploadWidget({
+        cloudName: 'phikit', // ⚠️ Replace with your cloud name
+        uploadPreset: 'models' // ⚠️ Replace with the preset you created
+      }, (error, result) => { 
+          // Inside your upload widget's success callback...
+          if (!error && result && result.event === "success") { 
+          
+            // 1. Get the original URL
+            const originalUrl = result.info.secure_url;
+            console.log("Original URL:", originalUrl);
+
+            // 2. Define your transformation
+            const autoCropTransformation = 'w_400,h_400,c_fill,g_auto';
+
+            // 3. Insert the transformation into the URL
+            const parts = originalUrl.split('/upload/');
+            const transformedUrl = parts[0] + '/upload/' + autoCropTransformation + '/' + parts[1];
+            
+            console.log("Transformed URL:", transformedUrl);
+            // Now you can use this transformedUrl in an <img> tag!
+          
+            // NEW: Put the URL into the text box instead of the console
+            urlBox.value = transformedUrl;
+            
+            // NEW: Reset copy button text
+            copyButton.innerText = "Copy";
+          }
+        }
+      );
+
+      // 2. Add a click listener to the button
+      document.getElementById("upload_widget").addEventListener("click", function(){
+          myWidget.open();
+        }, false);
+
+      // NEW: Add a click listener to the copy button
+      copyButton.addEventListener("click", function() {
+          // Select the text
+          urlBox.select();
+          // Copy the text inside the text field
+          navigator.clipboard.writeText(urlBox.value);
+          // Update the button text to show feedback
+          copyButton.innerText = "Copied!";
+      });
+    </script>
+</body>
+</html>
